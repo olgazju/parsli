@@ -1,5 +1,4 @@
 import hashlib
-import re
 
 from pydantic import BaseModel
 
@@ -12,18 +11,13 @@ class MergeDecision(BaseModel):
     confidence: float
 
 
-_ASOS_PREFIX = re.compile(r"^ASO", re.IGNORECASE)
-_ECSA_PREFIX = re.compile(r"^ECSA", re.IGNORECASE)
-
-
 def can_merge_tracking_numbers(a: str, b: str) -> MergeDecision:
     """Decide whether two tracking numbers may be merged into one shipment.
 
     Rules (in priority order):
     1. Identical values → always merge.
-    2. ASO* ↔ ECSA* → allowed (ASOS order handed off to HFD for last-mile).
-    3. Same carrier family, different values → DENY; explicit alias evidence required.
-    4. Different families, different values → DENY without alias evidence.
+    2. Same carrier family, different values → DENY; explicit alias evidence required.
+    3. Different families, different values → DENY without alias evidence.
     """
     a_norm = a.strip().upper()
     b_norm = b.strip().upper()
@@ -33,15 +27,6 @@ def can_merge_tracking_numbers(a: str, b: str) -> MergeDecision:
             should_merge=True,
             reason="identical tracking numbers",
             confidence=1.0,
-        )
-
-    asos_to_hfd = _ASOS_PREFIX.match(a_norm) and _ECSA_PREFIX.match(b_norm)
-    hfd_to_asos = _ECSA_PREFIX.match(a_norm) and _ASOS_PREFIX.match(b_norm)
-    if asos_to_hfd or hfd_to_asos:
-        return MergeDecision(
-            should_merge=True,
-            reason="ASOS/HFD handoff alias (ASO↔ECSA pattern)",
-            confidence=0.85,
         )
 
     if same_carrier_family(a_norm, b_norm):

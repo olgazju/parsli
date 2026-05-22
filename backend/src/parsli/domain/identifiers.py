@@ -7,12 +7,30 @@ class TrackingIdentifier(BaseModel):
     value: str
     carrier_hint: str | None = None
     confidence: float = 1.0
+    source: str | None = None  # "body" | "body_near_keyword"
 
 
 class OrderIdentifier(BaseModel):
     value: str
     merchant_hint: str | None = None
     confidence: float = 1.0
+
+
+# Pure-digit carriers (FedEx 15-digit, DHL 10-11 digit) require a nearby
+# shipping keyword — without context they match phone numbers, billing IDs, etc.
+_CONTEXT_REQUIRED: frozenset[str] = frozenset({"fedex", "dhl"})
+
+_NEARBY_SHIPPING_RE = re.compile(
+    r"tracking|tracking\s+number|shipment|parcel|delivery|מספר\s+מעקב|משלוח|חבילה",
+    re.IGNORECASE,
+)
+
+_CONTEXT_WINDOW = 150  # chars searched on each side of a candidate match
+
+
+def _has_nearby_context(text: str, start: int, end: int) -> bool:
+    window = text[max(0, start - _CONTEXT_WINDOW): end + _CONTEXT_WINDOW]
+    return bool(_NEARBY_SHIPPING_RE.search(window))
 
 
 # Ordered: more-specific patterns first so the generic fallback only fires when
@@ -47,17 +65,21 @@ _ORDER_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 def extract_tracking_candidates(text: str) -> list[TrackingIdentifier]:
     """Extract tracking number candidates using ordered pattern matching.
 
-    Generic/short numeric patterns only fire when no specific match is found.
+    Pure-digit carriers (FedEx/DHL) require a nearby shipping keyword to avoid
+    false positives from phone numbers and billing reference IDs.
     """
     seen: set[str] = set()
     results: list[TrackingIdentifier] = []
 
     for carrier, pattern in _TRACKING_PATTERNS:
         for match in pattern.finditer(text):
+            if carrier in _CONTEXT_REQUIRED and not _has_nearby_context(text, match.start(), match.end()):
+                continue
             val = match.group(0).upper()
             if val not in seen:
                 seen.add(val)
-                results.append(TrackingIdentifier(value=val, carrier_hint=carrier))
+                source = "body_near_keyword" if carrier in _CONTEXT_REQUIRED else "body"
+                results.append(TrackingIdentifier(value=val, carrier_hint=carrier, source=source))
 
     return results
 

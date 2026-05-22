@@ -202,7 +202,7 @@ _PAYMENT_PROCESSOR_DOMAINS: frozenset[str] = frozenset({
 
 _INVOICE_RE = re.compile(
     r"(?:invoice|receipt|חשבונית|קבלה|billing statement|your statement|"
-    r"payment confirmation|account statement)",
+    r"payment confirmation|account statement|פירוט חיובים|חיובים תקופתיים)",
     re.I,
 )
 _INVOICE_NEGATIVE_RE = re.compile(

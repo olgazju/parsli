@@ -27,7 +27,9 @@ src/parsli/
                          QueryVocabulary — grouped keyword config (developer-controlled)
   domain/                Pure domain objects — no I/O
     statuses.py          ShipmentStatus enum + SIDE_STATUSES / TERMINAL_STATUSES
-    identifiers.py       TrackingIdentifier, OrderIdentifier, pattern extractors
+    identifiers.py       TrackingIdentifier (value, carrier_hint, confidence, source),
+                         OrderIdentifier, pattern extractors
+                         FedEx/DHL require nearby shipping context (_CONTEXT_REQUIRED)
     carriers.py          CarrierFamily detection from tracking number or domain
     events.py            ShipmentEventDTO
     shipments.py         ShipmentDTO, ShipmentAliasDTO, DashboardDTO
@@ -66,6 +68,7 @@ src/parsli/
                          trust_score, trust_reasons_json in email_messages
   processing/
     cleaner.py           EmailCleaner → CleanedEmail
+                         _HEBREW_FOOTER_RES strips mailing-system boilerplate before analysis
     rule_engine.py       RuleEngine(email_id, cleaned_text, sender_domain) → RuleExtractionResult
                          sender_domain checked first — payment processors → is_invoice=True
                          ACTION_REQUIRED rule fires before READY_FOR_PICKUP
@@ -144,11 +147,15 @@ Also checked by `RuleEngine` at classification time (belt-and-suspenders).
 
 **Privacy** — never add body/full-text/PII columns to ORM models. Allowed to store: message_id, received_at, sender_domain, subject_hash, body_hash, extracted structured fields, short evidence snippets, query run metadata, sender trust metadata.
 
-**Merge** — `can_merge_tracking_numbers()` in `domain/merge.py`. No LLM for merge decisions. ASO↔ECSA allowed; same carrier family with different IDs → deny.
+**Merge** — `can_merge_tracking_numbers()` in `domain/merge.py`. No LLM for merge decisions. No merchant-specific merge rules. Identical tracking → merge; same carrier family, different IDs → deny; different families → deny.
 
 **Chronology** — `SIDE_STATUSES` (action_required, payment_required, delayed_or_problem, unknown) never create conflicts. Only main-status regressions flagged.
 
 **Rule ordering** — `action_required` fires before `ready_for_pickup`. Payment processor domains checked before text rules.
+
+**Billing exclusion** — `_INVOICE_RE` in `processing/rule_engine.py` includes `פירוט חיובים|חיובים תקופתיים` (Hebrew periodic billing). These phrases also appear in `QueryVocabulary.exclude_terms` so the emails are not downloaded.
+
+**Tracking extraction context guard** — FedEx (15-digit) and DHL (10–11 digit) patterns in `domain/identifiers.py` require a shipping keyword within 150 chars (`_NEARBY_SHIPPING_RE`). Pure-digit matches without context (phone numbers, billing IDs) are silently dropped. Format-specific carriers (UPS, Israel Post, HFD, ASOS) are extracted globally — no context guard. `TrackingIdentifier.source` carries `"body"` or `"body_near_keyword"`.
 
 **SQLite NULL uniqueness** — `ShipmentEventRepository.insert_if_new` uses explicit SELECT (SQLite treats NULL≠NULL in unique constraints).
 

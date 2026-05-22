@@ -26,6 +26,13 @@ _LEGAL_FOOTER_RE = re.compile(
 _REPEATED_WHITESPACE = re.compile(r"\n{3,}")
 _TRACKING_PIXEL = re.compile(r"https?://[^\s]+\.(gif|png|jpg)\?[^\s]+", re.IGNORECASE)
 
+# Hebrew mailing-system footer boilerplate — stripped before any analysis.
+_HEBREW_FOOTER_RES: list[re.Pattern[str]] = [
+    re.compile(r"הודעה זו נשלחה ל-.{0,300}", re.DOTALL),
+    re.compile(r"נשלח באמצעות.{0,300}", re.DOTALL),
+    re.compile(r"מערכת דיוור.{0,300}", re.DOTALL),
+]
+
 
 class CleanedEmail(BaseModel):
     email_id: str
@@ -60,6 +67,8 @@ class EmailCleaner:
     @staticmethod
     def _clean(text: str) -> str:
         text = _TRACKING_PIXEL.sub("", text)
+        for _p in _HEBREW_FOOTER_RES:
+            text = _p.sub("", text)
         text = _UNSUBSCRIBE_RE.sub("", text)
         text = _LEGAL_FOOTER_RE.sub("", text)
         text = _REPEATED_WHITESPACE.sub("\n\n", text)

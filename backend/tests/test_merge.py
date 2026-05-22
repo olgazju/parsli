@@ -10,16 +10,10 @@ def test_identical_tracking_always_merge():
     assert d.should_merge is True
 
 
-def test_asos_hfd_merge_allowed():
-    # ASO* ↔ ECSA* handoff pattern — should merge
+def test_asos_hfd_different_families_no_merge():
+    # ASOS and HFD are different carrier families — no automatic cross-family merge
     d = can_merge_tracking_numbers("ASO1006GB02687136001", "ECSA0086743")
-    assert d.should_merge is True
-    assert d.confidence >= 0.80
-
-
-def test_hfd_to_asos_merge_allowed():
-    d = can_merge_tracking_numbers("ECSA0086743", "ASO1006GB02687136001")
-    assert d.should_merge is True
+    assert d.should_merge is False
 
 
 def test_different_russia_post_no_merge():
