@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parsli"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "sqlalchemy>=2.0.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-api-python-client>=2.140.0",
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+notebook = [
+    "pandas>=2.2.0",
+    "jupyter>=1.1.0",
+]
+
+[project.scripts]
+parsli = "parsli.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+# Exclude packages uploaded to PyPI less than 10 days ago (supply-chain guard).
+exclude-newer = "10 days"

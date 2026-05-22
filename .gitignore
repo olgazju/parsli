@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+/.parsli
+parcelito-mvp-prompt.md
+decisions.md
+.DS_Store
+.python-version
+models/gemma-4-E4B-it-Q4_K_M.gguf
+models/mmproj-gemma-4-E4B-it-BF16.gguf
+/notebooks/data
