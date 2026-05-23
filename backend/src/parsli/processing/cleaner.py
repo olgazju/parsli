@@ -27,6 +27,9 @@ class CleanedEmail(BaseModel):
     cleaned_text_hash: str
     cleaned_full_len: int
     is_shipping_shaped: bool
+    # Optional context for model prompts (never persisted to DB)
+    subject: str = ""
+    sender_domain: str | None = None
 
 
 class EmailCleaner:

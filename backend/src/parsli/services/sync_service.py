@@ -13,13 +13,12 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import AppConfig
-from ..db.models import Base
 from ..db.repositories import (
     EmailAccountRepository,
     EmailMessageRepository,
     GmailSyncStateRepository,
 )
-from ..db.session import make_engine, make_session_factory
+from ..db.session import ensure_schema, make_engine, make_session_factory
 from ..gmail.auth import GmailOAuthManager, TokenMissingError
 from ..gmail.client import GmailClient
 from ..gmail.candidate_fetcher import GmailCandidateFetcher
@@ -59,7 +58,7 @@ class SyncService:
     def from_config(cls, config: AppConfig) -> "SyncService":
         """Convenience factory that creates engine, schema, and OAuth manager."""
         engine = make_engine(config.database.sqlite_path)
-        Base.metadata.create_all(engine)
+        ensure_schema(engine)
         session_factory = make_session_factory(engine)
         oauth = GmailOAuthManager(
             credentials_path=config.credentials_path,

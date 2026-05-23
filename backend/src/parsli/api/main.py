@@ -9,8 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 from ..config import AppConfig
-from ..db.models import Base
-from ..db.session import make_engine, make_session_factory
+from ..db.session import ensure_schema, make_engine, make_session_factory
 from ..gmail.auth import GmailOAuthManager
 from .routes_dashboard import make_dashboard_router
 from .routes_settings import make_settings_router
@@ -27,7 +26,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         config = AppConfig()
 
     engine = make_engine(config.database.sqlite_path)
-    Base.metadata.create_all(engine)
+    ensure_schema(engine)
     session_factory = make_session_factory(engine)
 
     oauth = GmailOAuthManager(

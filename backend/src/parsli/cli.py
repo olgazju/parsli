@@ -143,13 +143,12 @@ def cmd_sync(args: argparse.Namespace) -> None:
 
 def cmd_rebuild(args: argparse.Namespace) -> None:
     from .config import AppConfig
-    from .db.models import Base
-    from .db.session import make_engine, make_session_factory
+    from .db.session import ensure_schema, make_engine, make_session_factory
     from .services.shipment_resolution_service import ShipmentResolutionService
 
     config = AppConfig()
     engine = make_engine(config.database.sqlite_path)
-    Base.metadata.create_all(engine)
+    ensure_schema(engine)
     session_factory = make_session_factory(engine)
 
     with session_factory() as session:

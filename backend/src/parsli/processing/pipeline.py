@@ -2,8 +2,12 @@
 
 from ..privacy.debug_store import DebugStore
 from .cleaner import EmailCleaner
-from .extraction_orchestrator import ExtractionOrchestrator, FinalExtraction
+from .extraction_orchestrator import ExtractionOrchestrator
+from .reconciler import FinalClassificationResult
 from .rule_engine import RuleEngine
+
+# Re-export so callers that import FinalExtraction from here still work.
+FinalExtraction = FinalClassificationResult
 
 
 class EmailProcessingPipeline:
@@ -34,11 +38,13 @@ class EmailProcessingPipeline:
         raw_body: str,
         sender_domain: str | None = None,
         subject: str = "",
-    ) -> FinalExtraction:
-        """Run the full pipeline for one email and return the FinalExtraction."""
+        sender_trust_level: str | None = None,
+    ) -> FinalClassificationResult:
+        """Run the full pipeline for one email and return the FinalClassificationResult."""
         cleaned = self._cleaner.clean(email_id, raw_body)
+        cleaned = cleaned.model_copy(update={"subject": subject, "sender_domain": sender_domain})
         self._debug.store_cleaned_text(email_id, cleaned.cleaned_text)
         rules = self._rules.extract(
             email_id, cleaned.cleaned_text, sender_domain=sender_domain, subject=subject
         )
-        return self._orchestrator.orchestrate(cleaned, rules)
+        return self._orchestrator.orchestrate(cleaned, rules, sender_trust_level)

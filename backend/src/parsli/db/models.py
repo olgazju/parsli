@@ -92,6 +92,7 @@ class ProcessedEmail(Base):
     is_shipping_shaped: Mapped[bool] = mapped_column(Boolean, default=False)
     is_relevant: Mapped[bool] = mapped_column(Boolean, default=False)
     ignore_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    model_mode: Mapped[str | None] = mapped_column(String(32), nullable=True)
     processed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
@@ -102,10 +103,16 @@ class EmailExtraction(Base):
         String(32), ForeignKey("email_messages.email_id"), primary_key=True
     )
     processing_version: Mapped[str] = mapped_column(String(64), primary_key=True)
+    # Coarse email category (new)
+    email_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Final reconciled status + per-source raw values
     status: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    model_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status_confidence: Mapped[float] = mapped_column(Float, default=0.0)
     status_evidence: Mapped[str] = mapped_column(Text, default="")
     merchant: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    carrier: Mapped[str | None] = mapped_column(String(64), nullable=True)
     selected_tracking_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
     tracking_candidates_json: Mapped[str] = mapped_column(Text, default="[]")
     selected_order_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -113,8 +120,19 @@ class EmailExtraction(Base):
     pickup_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     currency: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    # Decision metadata
+    decision_source: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    conflict_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Model observability
     model_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     model_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    model_mode: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    model_latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rule_model_agreed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    confidence_delta: Mapped[float | None] = mapped_column(Float, nullable=True)
+    needs_review: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     prompt_version: Mapped[str] = mapped_column(String(32), nullable=False)
     rules_version: Mapped[str] = mapped_column(String(32), nullable=False)
     extraction_error: Mapped[str | None] = mapped_column(Text, nullable=True)

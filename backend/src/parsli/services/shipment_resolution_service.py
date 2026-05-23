@@ -27,7 +27,7 @@ from ..domain.events import ShipmentEventDTO
 from ..domain.merge import MergeDecision, can_merge_tracking_numbers, canonical_shipment_id
 from ..domain.shipments import ShipmentAliasDTO, ShipmentDTO
 from ..domain.statuses import STATUS_LABELS, ShipmentStatus
-from ..processing.extraction_orchestrator import FinalExtraction
+from ..processing.reconciler import FinalClassificationResult as FinalExtraction
 
 logger = logging.getLogger(__name__)
 

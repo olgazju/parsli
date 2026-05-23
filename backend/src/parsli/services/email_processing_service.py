@@ -16,11 +16,15 @@ from ..privacy.sanitizer import extract_sender_domain
 from ..model.factory import ModelClientFactory
 from ..privacy.debug_store import DebugStore
 from ..processing.cleaner import EmailCleaner
-from ..processing.extraction_orchestrator import ExtractionOrchestrator, FinalExtraction
+from ..processing.extraction_orchestrator import ExtractionOrchestrator
 from ..processing.pipeline import EmailProcessingPipeline
+from ..processing.reconciler import FinalClassificationResult
 from ..processing.rule_engine import RuleEngine
 
 logger = logging.getLogger(__name__)
+
+# Backward-compat alias
+FinalExtraction = FinalClassificationResult
 
 
 class EmailProcessingService:
@@ -65,6 +69,7 @@ class EmailProcessingService:
             model_client=model_client,
             model_config_name=config.model.provider,
             model_name=model_name,
+            model_config=config.model,
             privacy=config.privacy,
             processing=config.processing,
             debug_store=debug_store,
@@ -79,14 +84,14 @@ class EmailProcessingService:
         )
         self._msg_repo = EmailMessageRepository(session)
 
-    def process_new_emails(self) -> list[FinalExtraction]:
+    def process_new_emails(self) -> list[FinalClassificationResult]:
         """Process all emails not yet processed at the current version."""
         version = self._config.processing.processing_version()
         batch_size = self._config.processing.incremental_batch_size
         ids = self._msg_repo.get_unprocessed_ids(version, batch_size)
         return [self._process_one(email_id) for email_id in ids]
 
-    def reprocess_email(self, email_id: str) -> FinalExtraction | None:
+    def reprocess_email(self, email_id: str) -> FinalClassificationResult | None:
         """Re-run the pipeline for a single email regardless of prior version."""
         msg = self._msg_repo.get(email_id)
         if msg is None:
@@ -94,19 +99,30 @@ class EmailProcessingService:
             return None
         return self._process_one(email_id)
 
-    def _process_one(self, email_id: str) -> FinalExtraction:
+    def _process_one(self, email_id: str) -> FinalClassificationResult:
         raw = self._gmail.fetch_raw(email_id)
         body = self._gmail.extract_body(raw.get("payload", {}))
         headers = self._gmail.extract_headers(raw)
         sender_domain = extract_sender_domain(headers.get("From", ""))
         subject = headers.get("Subject", "")
+
+        # Pass sender trust level so the model classifier can skip blocked senders
+        msg = self._msg_repo.get(email_id)
+        sender_trust_level = msg.sender_trust_level if msg else None
+
         result = self._pipeline.process(
-            email_id, body, sender_domain=sender_domain, subject=subject
+            email_id,
+            body,
+            sender_domain=sender_domain,
+            subject=subject,
+            sender_trust_level=sender_trust_level,
         )
         logger.debug(
-            "Processed %s → status=%s relevant=%s",
+            "Processed %s → type=%s status=%s relevant=%s source=%s",
             email_id,
+            result.email_type.value,
             result.status.value,
             result.is_relevant,
+            result.decision_source.value,
         )
         return result

@@ -41,6 +41,9 @@ src/parsli/
                          (backward-compat wrappers over lazy-default extractor)
                          FedEx/DHL require nearby shipping context (_CONTEXT_REQUIRED)
     carriers.py          CarrierFamily detection from tracking number or domain
+    email_types.py       EmailType enum (order_confirmation | shipping_update | pickup_ready |
+                         delivered | payment_problem | billing_only | non_shipping | digital_product)
+                         email_type_from_status(status, is_invoice) → EmailType
     events.py            ShipmentEventDTO
     shipments.py         ShipmentDTO, ShipmentAliasDTO, DashboardDTO
     chronology.py        check_chronology(), select_current_status()
@@ -83,17 +86,46 @@ src/parsli/
     cleaner.py           EmailCleaner(lang_config) → CleanedEmail
                          Builds footer/unsubscribe/shipping-signal patterns from MergedLanguageConfig.
                          Defaults to load_language_packs(DEFAULT_LANGUAGES) when omitted.
+                         CleanedEmail carries subject: str = "" and sender_domain: str | None = None
+                         (model-prompt context — never persisted to DB)
     rule_engine.py       RuleEngine(lang_config) → RuleExtractionResult
                          Builds _invoice_re, _invoice_negative_re, _status_rules, and an
                          IdentifierExtractor dynamically from MergedLanguageConfig.
                          Defaults to load_language_packs(DEFAULT_LANGUAGES) when omitted.
                          sender_domain checked first — payment processors → is_invoice=True
                          ACTION_REQUIRED rule fires before READY_FOR_PICKUP
-    extraction_orchestrator.py  Merges rules + model → FinalExtraction, persists rows
+    model_classifier.py  ModelClassifier(model_client, model_provider, model_name,
+                         model_config, debug_store)
+                         select_mode(rules, cleaned, sender_trust_level) → ModelExecutionMode
+                         classify(cleaned, mode, rules) → (ModelClassificationResult | None,
+                         ModelCallObservability)
+                         Modes: MODEL_REQUIRED (full prompt, required_max_chars),
+                         MODEL_AUDIT (lightweight agreement, audit_max_chars), SKIP_MODEL
+    reconciler.py        ClassificationReconciler.reconcile(rules, model, obs, cleaned, ...)
+                         → FinalClassificationResult
+                         DecisionSource enum: RULE | MODEL | RULE_MODEL_AGREE | MODEL_OVERRIDE |
+                         RULE_OVERRIDE | SEMANTIC_GUARD | REVIEW_NEEDED | MODEL_FALLBACK
+                         FinalClassificationResult: email_type, rule_email_type, model_email_type,
+                         status, rule_status, model_status, status_confidence, rule_confidence,
+                         model_confidence, decision_source, conflict_reason, needs_review,
+                         rule_model_agreed, confidence_delta, classification_method,
+                         plus identifiers, merchant, carrier, provenance, observability
+    extraction_orchestrator.py  Wires ModelClassifier → ClassificationReconciler → persistence
+                         FinalExtraction = FinalClassificationResult (backward-compat alias)
+                         orchestrate(cleaned, rules, sender_trust_level) → FinalClassificationResult
     pipeline.py          EmailProcessingPipeline (wires cleaner→rules→orchestrator)
   model/
-    base.py              LocalModelClient Protocol + ModelExtractionResult
-    prompts.py           format_prompt(text, version)
+    base.py              LocalModelClient Protocol
+                         ModelClassificationResult (email_type, status, status_confidence,
+                         status_evidence, merchant, carrier, tracking_numbers, order_numbers,
+                         pickup_code, amount, currency, reasoning)
+                         ModelAuditResult (agrees, email_type, status, status_confidence, reason)
+                         ModelExtractionResult = ModelClassificationResult (backward-compat alias)
+    prompts.py           format_required_prompt(subject, sender_domain, email_text) → str
+                         format_audit_prompt(subject, sender_domain, preview, rule_email_type,
+                         rule_status, rule_confidence, rule_evidence, tracking_candidates,
+                         order_candidates) → str
+                         build_model_text_preview(cleaned_text, max_chars) → str
     lmstudio_client.py   OpenAI-compatible /v1/chat/completions
     llamacpp_client.py   llama-cpp /v1/chat/completions
     factory.py           ModelClientFactory.create(config)

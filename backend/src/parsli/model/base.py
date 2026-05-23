@@ -1,7 +1,8 @@
 from typing import Protocol, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from ..domain.email_types import EmailType
 from ..domain.identifiers import OrderIdentifier, TrackingIdentifier
 from ..domain.statuses import ShipmentStatus
 
@@ -13,6 +14,8 @@ class LocalModelClient(Protocol):
 
     Implementations must be able to run a prompt and parse the response into a
     typed Pydantic model without any network calls to external services.
+    The client owns a persistent HTTP connection; callers must call close()
+    (or use the context-manager form) when done.
     """
 
     def extract(self, prompt: str, *, response_model: type[T]) -> T:
@@ -30,18 +33,40 @@ class LocalModelClient(Protocol):
         """
         ...
 
+    def close(self) -> None:
+        """Release the underlying HTTP connection pool."""
+        ...
 
-class ModelExtractionResult(BaseModel):
-    """Structured output expected from a local model extraction call."""
 
+class ModelClassificationResult(BaseModel):
+    """Structured output expected from a model classification call (prompt v2+)."""
+
+    email_type: EmailType = EmailType.NON_SHIPPING
     status: ShipmentStatus = ShipmentStatus.UNKNOWN
     status_confidence: float = 0.0
     status_evidence: str = ""
     merchant: str | None = None
-    tracking_numbers: list[str] = []
-    order_numbers: list[str] = []
+    carrier: str | None = None
+    tracking_numbers: list[str] = Field(default_factory=list)
+    order_numbers: list[str] = Field(default_factory=list)
     pickup_code: str | None = None
     amount: float | None = None
     currency: str | None = None
-    is_relevant: bool = False
-    ignore_reason: str | None = None
+    reasoning: str | None = None
+
+
+class ModelAuditResult(BaseModel):
+    """Structured response from the lightweight audit prompt (MODEL_AUDIT mode).
+
+    The model only needs to agree or disagree; it does not re-extract identifiers.
+    """
+
+    agrees: bool
+    email_type: EmailType = EmailType.NON_SHIPPING
+    status: ShipmentStatus = ShipmentStatus.UNKNOWN
+    status_confidence: float = 0.0
+    reason: str | None = None
+
+
+# Backward-compat alias — new code should use ModelClassificationResult
+ModelExtractionResult = ModelClassificationResult

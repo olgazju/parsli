@@ -2,6 +2,9 @@
 
 The llama-cpp server exposes a /completion endpoint that accepts a grammar
 parameter for constrained JSON generation.
+
+A single httpx.Client is created in __init__ and reused for every call.
+Call close() (or use the context-manager form) when finished.
 """
 
 import json
@@ -21,14 +24,15 @@ class LlamaCppClient:
     """Extracts structured data using a locally-running llama-cpp-python server.
 
     Args:
-        config: ModelConfig with endpoint_url.
+        config: ModelConfig with endpoint_url and timeout_seconds.
     """
 
     def __init__(self, config: ModelConfig) -> None:
         base = (config.endpoint_url or _DEFAULT_ENDPOINT).rstrip("/")
         self._url = f"{base}/v1/chat/completions"
         self._model = config.model_name
-        self._timeout = config.timeout_seconds
+        self._client = httpx.Client(timeout=config.timeout_seconds)
+        self.last_usage: dict[str, int] | None = None
 
     def extract(self, prompt: str, *, response_model: type[T]) -> T:
         """Send prompt to llama-cpp server and parse the JSON response."""
@@ -43,10 +47,20 @@ class LlamaCppClient:
             "temperature": 0.1,
             "stream": False,
         }
-        with httpx.Client(timeout=self._timeout) as client:
-            resp = client.post(self._url, json=payload)
-            resp.raise_for_status()
-
-        raw = resp.json()["choices"][0]["message"]["content"]
+        resp = self._client.post(self._url, json=payload)
+        resp.raise_for_status()
+        body = resp.json()
+        self.last_usage = body.get("usage")
+        raw = body["choices"][0]["message"]["content"]
         data = json.loads(raw)
         return response_model.model_validate(data)
+
+    def close(self) -> None:
+        """Close the underlying HTTP connection pool."""
+        self._client.close()
+
+    def __enter__(self) -> "LlamaCppClient":
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()

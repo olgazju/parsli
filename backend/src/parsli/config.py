@@ -38,7 +38,10 @@ class ModelConfig(BaseModel):
     endpoint_url: str | None = None
     model_name: str = "gemma-3-4b"
     timeout_seconds: int = 120
-    max_input_chars: int = 1500
+    # Text size sent to the model per mode. Required gets a full email body;
+    # audit only needs a short preview since rules already classified the email.
+    required_max_chars: int = 4000
+    audit_max_chars: int = 1500
 
 
 class PrivacyConfig(BaseModel):
@@ -48,7 +51,7 @@ class PrivacyConfig(BaseModel):
 
 class ProcessingConfig(BaseModel):
     rules_version: str = "v1"
-    prompt_version: str = "v1"
+    prompt_version: str = "v2"
     merge_version: str = "v1"
     incremental_batch_size: int = 100
 
