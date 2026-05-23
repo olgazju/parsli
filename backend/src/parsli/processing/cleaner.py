@@ -25,6 +25,11 @@ _LEGAL_FOOTER_RE = re.compile(
 )
 _REPEATED_WHITESPACE = re.compile(r"\n{3,}")
 _TRACKING_PIXEL = re.compile(r"https?://[^\s]+\.(gif|png|jpg)\?[^\s]+", re.IGNORECASE)
+# Strip URLs from markdown links [text](url) → text, and bare https:// URLs.
+# This removes URL query parameters that contain phone numbers, token IDs, and
+# other non-tracking numeric sequences that pollute identifier extraction.
+_MARKDOWN_URL_RE = re.compile(r"\(https?://[^\s)]+\)", re.IGNORECASE)
+_BARE_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
 
 # Hebrew mailing-system footer boilerplate — stripped before any analysis.
 _HEBREW_FOOTER_RES: list[re.Pattern[str]] = [
@@ -71,6 +76,8 @@ class EmailCleaner:
             text = _p.sub("", text)
         text = _UNSUBSCRIBE_RE.sub("", text)
         text = _LEGAL_FOOTER_RE.sub("", text)
+        text = _MARKDOWN_URL_RE.sub("", text)
+        text = _BARE_URL_RE.sub("", text)
         text = _REPEATED_WHITESPACE.sub("\n\n", text)
         return text.strip()
 

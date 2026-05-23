@@ -97,7 +97,10 @@ class EmailProcessingService:
         body = self._gmail.extract_body(raw.get("payload", {}))
         headers = self._gmail.extract_headers(raw)
         sender_domain = extract_sender_domain(headers.get("From", ""))
-        result = self._pipeline.process(email_id, body, sender_domain=sender_domain)
+        subject = headers.get("Subject", "")
+        result = self._pipeline.process(
+            email_id, body, sender_domain=sender_domain, subject=subject
+        )
         logger.debug(
             "Processed %s → status=%s relevant=%s",
             email_id,

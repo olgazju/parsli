@@ -43,8 +43,9 @@ _STATUS_RULES: list[tuple[ShipmentStatus, float, re.Pattern[str]]] = [
         re.compile(
             r"(?:has been delivered|was delivered|successfully delivered|"
             r"delivery complete|your order has been delivered|"
-            # Hebrew Israel Post pickup confirmation
-            r"תודה שאספת את המשלוח|נאסף בהצלחה|המשלוח נמסר|נמסר ללקוח|"
+            # Hebrew: "נמסר" alone means "was delivered/handed over" — specific to
+            # shipping context; also covers "המשלוח נמסר" and "נמסר בשעה HH:MM".
+            r"תודה שאספת את המשלוח|נאסף בהצלחה|נמסר|"
             r"הגיע ליעדו|נמסר בהצלחה)",
             re.I,
         ),
@@ -133,13 +134,18 @@ _STATUS_RULES: list[tuple[ShipmentStatus, float, re.Pattern[str]]] = [
         ),
     ),
     # ── Delayed / problem ─────────────────────────────────────────────────────
+    # Bare "delay" / "עיכוב" fires in cancellation-policy and apology text that
+    # has nothing to do with shipment state. Require explicit delivery context.
     (
         ShipmentStatus.DELAYED_OR_PROBLEM,
         0.80,
         re.compile(
-            r"(?:delayed|delay|cannot be delivered|delivery attempt failed|"
+            r"(?:delivery(?:\s+\w+){0,3}\s+delayed|delayed(?:\s+\w+){0,3}\s+delivery|"
+            r"shipment\s+delayed|delay(?:ed)?\s+in\s+(?:transit|delivery|shipment)|"
+            r"cannot be delivered|delivery attempt failed|"
             r"delivery exception|undeliverable|address not found|"
-            r"עיכוב|לא ניתן למסור|כתובת שגויה|בעיית מסירה)",
+            r"לא ניתן למסור|כתובת שגויה|בעיית מסירה|"
+            r"עיכוב\s+(?:במשלוח|במסירה|בחבילה)|(?:משלוח|חבילה|מסירה)\s+(?:\S+\s+){0,3}עיכוב)",
             re.I,
         ),
     ),
@@ -199,14 +205,24 @@ _PAYMENT_PROCESSOR_DOMAINS: frozenset[str] = frozenset({
 })
 
 # ── Invoice / non-shipment signals ────────────────────────────────────────────
+# Only match billing-dominated signals. Excluded:
+# - bare קבלה ("received" in Hebrew, fires on order-confirmation "התקבלה")
+# - bare חשבונית (appears in "your invoice will be sent after processing")
+# - receipt/payment confirmation (too common in order confirmations)
+# Kept: unambiguous English "invoice", Hebrew tax-invoice and periodic billing.
 
 _INVOICE_RE = re.compile(
-    r"(?:invoice|receipt|חשבונית|קבלה|billing statement|your statement|"
-    r"payment confirmation|account statement|פירוט חיובים|חיובים תקופתיים)",
+    r"(?:\binvoice\b|tax invoice|billing statement|account statement|"
+    r"חשבונית\s+מס|פירוט חיובים|חיובים תקופתיים)",
     re.I,
 )
+# Shipping-specific signals override the invoice flag: an email that discusses an
+# actual shipment may reference "invoice" only as a download link or future document.
+# Hebrew terms included so hoodies/All4Pet (Hebrew order confirmations) are safe.
 _INVOICE_NEGATIVE_RE = re.compile(
-    r"(?:tracking|shipment|delivery|shipped|dispatch)",
+    r"(?:tracking\s+(?:number|code)|shipment|has\s+(?:shipped|been\s+shipped)|"
+    r"out\s+for\s+delivery|your\s+order\s+(?:is\s+on\s+its\s+way|has\s+shipped)|"
+    r"מספר\s+מעקב|נשלח|משלוח|חבילה|יצא\s+לדרך)",
     re.I,
 )
 
@@ -266,22 +282,32 @@ class RuleEngine:
         email_id: str,  # noqa: ARG002
         cleaned_text: str,
         sender_domain: str | None = None,
+        subject: str = "",
     ) -> RuleExtractionResult:
         # Payment processor domains are financial emails — never shipment updates.
         if sender_domain and sender_domain.lower() in _PAYMENT_PROCESSOR_DOMAINS:
             return _INVOICE_RESULT
 
         text = cleaned_text
+        # Prepend subject so identifier patterns also run against it. Status
+        # matching uses only the body to avoid subject-line false positives.
+        id_text = f"{subject}\n{text}" if subject else text
 
         is_invoice = self._detect_invoice(text)
-        status, confidence, evidence = self._match_status(text)
+        status, confidence, evidence = self._detect_status(subject, id_text)
         merchant = self._detect_merchant(text)
         pickup_code = self._detect_pickup_code(text)
         amount, currency = self._detect_amount(text)
-        tracking = extract_tracking_candidates(text)
-        orders = extract_order_candidates(text)
+        tracking = extract_tracking_candidates(id_text)
+        orders = extract_order_candidates(id_text)
 
-        is_shipping = bool(status) and not is_invoice
+        # Remove tracking candidates that are explicitly labeled as order numbers.
+        # A pure-digit number like "4500043904" that appears as "Order #4500043904"
+        # should not also be emitted as a DHL tracking candidate.
+        _order_values: set[str] = {o.value for o in orders}
+        tracking = [t for t in tracking if t.value not in _order_values]
+
+        is_shipping = (bool(status) or bool(tracking)) and not is_invoice
 
         return RuleExtractionResult(
             is_shipping_email=is_shipping,
@@ -300,6 +326,23 @@ class RuleEngine:
     @staticmethod
     def _detect_invoice(text: str) -> bool:
         return bool(_INVOICE_RE.search(text)) and not bool(_INVOICE_NEGATIVE_RE.search(text))
+
+    @staticmethod
+    def _detect_status(
+        subject: str,
+        id_text: str,
+    ) -> tuple[ShipmentStatus | None, float, str]:
+        # "Ordered: <product>" subjects mean ORDER_CONFIRMED regardless of body content.
+        # Amazon (and some other retailers) include a full delivery-step progress bar
+        # ("Ordered  Shipped  Out for delivery  Delivered") in every email body, which
+        # would otherwise match out_for_delivery even for a freshly placed order.
+        if subject and re.match(r"^Ordered\s*:", subject.strip(), re.IGNORECASE):
+            return ShipmentStatus.ORDER_CONFIRMED, 0.85, subject[:120].strip()
+        # "New Order #..." subjects indicate a freshly placed order. Without this
+        # override, body text such as "will be shipped soon" triggers SHIPPED.
+        if subject and re.match(r"^New\s+Order\b", subject.strip(), re.IGNORECASE):
+            return ShipmentStatus.ORDER_CONFIRMED, 0.85, subject[:120].strip()
+        return RuleEngine._match_status(id_text)
 
     @staticmethod
     def _match_status(

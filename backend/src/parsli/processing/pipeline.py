@@ -33,9 +33,12 @@ class EmailProcessingPipeline:
         email_id: str,
         raw_body: str,
         sender_domain: str | None = None,
+        subject: str = "",
     ) -> FinalExtraction:
         """Run the full pipeline for one email and return the FinalExtraction."""
         cleaned = self._cleaner.clean(email_id, raw_body)
         self._debug.store_cleaned_text(email_id, cleaned.cleaned_text)
-        rules = self._rules.extract(email_id, cleaned.cleaned_text, sender_domain=sender_domain)
+        rules = self._rules.extract(
+            email_id, cleaned.cleaned_text, sender_domain=sender_domain, subject=subject
+        )
         return self._orchestrator.orchestrate(cleaned, rules)
