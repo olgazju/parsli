@@ -5,69 +5,23 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class QueryVocabulary(BaseModel):
-    """Developer-controlled keyword groups used to build Gmail candidate queries.
+class LanguageConfig(BaseModel):
+    """Which language packs are active for this instance.
 
-    Split into named groups so the query builder can emit targeted named queries
-    rather than one large OR clause — making it easy to debug why a message
-    was fetched and to tune signal-to-noise per group.
+    Defaults to English + Hebrew. The processing components build their
+    patterns exclusively from the active language packs, so adding or
+    removing a code here changes every regex, query term, and shipping
+    signal without touching Python source.
     """
 
-    strong_shipping: list[str] = Field(default_factory=lambda: [
-        "shipped",
-        "delivered",
-        '"tracking number"',
-        '"out for delivery"',
-        '"estimated delivery"',
-        "dispatch",
-        "customs",
-        '"מספר מעקב"',
-        '"ההזמנה נשלחה"',
-        '"ההזמנה שלך נשלחה"',
-        '"המשלוח נשלח"',
-        '"מספר מעקב"',
-        '"מוכן לאיסוף"',
-        '"יצא לדרך"',
-    ])
-    package_words: list[str] = Field(default_factory=lambda: [
-        '"your package"',
-        '"your shipment"',
-        '"your parcel"',
-        "חבילה",
-        "משלוח",
-    ])
-    order_lifecycle: list[str] = Field(default_factory=lambda: [
-        '"order confirmation"',
-        '"thanks for your order"',
-        '"your order has shipped"',
-        '"your order is on its way"',
-        '"אישור ההזמנה"',
-        '"הזמנתך התקבלה"',
-    ])
-    weak_phrases: list[str] = Field(default_factory=lambda: [
-        '"on its way"',
-        '"your order"',
-    ])
-    # Applied to every query
-    exclude_terms: list[str] = Field(default_factory=lambda: [
-        "פרסומת",
-        '"סיכום חודש"',
-        '"חשבונית מס"',
-        '"חשבונית מס קבלה"',
-        '"Tax Invoice"',
-        '"פירוט חיובים"',
-        '"חיובים תקופתיים"',
-        "unsubscribe",
-        "booking",
-        "ticket",
-        "tickets",
-    ])
-    # Extra exclusions applied only to the weak_phrases query to reduce noise
-    weak_phrase_exclusions: list[str] = Field(default_factory=lambda: [
-        '"your request"',
-        '"request is on its way"',
-    ])
-    # Filtered at Gmail query level — never downloaded
+    enabled: list[str] = Field(default_factory=lambda: ["en", "he"])
+
+
+class GmailConfig(BaseModel):
+    lookback_days: int = 60
+    query_category_filter: str = ""  # e.g. "(category:updates OR category:primary)"
+    # Filtered at Gmail query level and also checked by RuleEngine at
+    # classification time (belt-and-suspenders). Not language-specific.
     default_exclude_domains: list[str] = Field(default_factory=lambda: [
         "payplus.co.il",
         "paypal.com",
@@ -75,14 +29,8 @@ class QueryVocabulary(BaseModel):
         "cardcom.co.il",
         "tranzila.com",
         "isracard.co.il",
-        "booking.com"
+        "booking.com",
     ])
-
-
-class GmailConfig(BaseModel):
-    lookback_days: int = 60
-    query_category_filter: str = ""  # e.g. "(category:updates OR category:primary)"
-    vocabulary: QueryVocabulary = Field(default_factory=QueryVocabulary)
 
 
 class ModelConfig(BaseModel):
@@ -121,6 +69,7 @@ class AppConfig(BaseSettings):
     )
 
     app_dir: Path = Path(".parsli")
+    language: LanguageConfig = Field(default_factory=LanguageConfig)
     gmail: GmailConfig = Field(default_factory=GmailConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)

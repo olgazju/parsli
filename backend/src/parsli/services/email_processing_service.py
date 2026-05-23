@@ -11,6 +11,7 @@ from ..db.repositories import (
     ProcessedEmailRepository,
 )
 from ..gmail.client import GmailClient
+from ..languages import load_language_packs
 from ..privacy.sanitizer import extract_sender_domain
 from ..model.factory import ModelClientFactory
 from ..privacy.debug_store import DebugStore
@@ -69,9 +70,10 @@ class EmailProcessingService:
             debug_store=debug_store,
         )
 
+        lang_config = load_language_packs(config.language.enabled)
         self._pipeline = EmailProcessingPipeline(
-            cleaner=EmailCleaner(),
-            rule_engine=RuleEngine(),
+            cleaner=EmailCleaner(lang_config),
+            rule_engine=RuleEngine(lang_config),
             orchestrator=orchestrator,
             debug_store=debug_store,
         )

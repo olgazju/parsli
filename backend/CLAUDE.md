@@ -24,11 +24,21 @@ parsli rebuild        # rebuild all shipment timelines from existing events
 ```
 src/parsli/
   config.py              AppConfig (env prefix PARSLI_, nested __)
-                         QueryVocabulary — grouped keyword config (developer-controlled)
+                         LanguageConfig — enabled language codes (default ["en", "he"])
+                         GmailConfig — structural Gmail settings (lookback_days, default_exclude_domains)
+  languages/             Language pack system
+    __init__.py          LanguagePack, MergedLanguageConfig, StatusPatterns,
+                         load_language_packs(codes) → MergedLanguageConfig,
+                         DEFAULT_LANGUAGES = ["en", "he"]
+    en.yaml              English shipping signals, status phrases, query terms,
+                         footer patterns, billing phrases, order label regex
+    he.yaml              Hebrew equivalents
   domain/                Pure domain objects — no I/O
     statuses.py          ShipmentStatus enum + SIDE_STATUSES / TERMINAL_STATUSES
     identifiers.py       TrackingIdentifier (value, carrier_hint, confidence, source),
-                         OrderIdentifier, pattern extractors
+                         OrderIdentifier, IdentifierExtractor class (accepts MergedLanguageConfig),
+                         module-level extract_tracking_candidates / extract_order_candidates
+                         (backward-compat wrappers over lazy-default extractor)
                          FedEx/DHL require nearby shipping context (_CONTEXT_REQUIRED)
     carriers.py          CarrierFamily detection from tracking number or domain
     events.py            ShipmentEventDTO
@@ -50,7 +60,10 @@ src/parsli/
     models.py            BuiltGmailQuery, QueryRunDTO, CandidateMatchDTO,
                          CandidateFetchSummary, CandidateFetchResult, DomainPreferences
     domain_normalizer.py DomainNormalizer — cleans user-supplied domain strings
-    query_builder.py     GmailQueryBuilder.build_queries() → list[BuiltGmailQuery]
+    query_builder.py     GmailQueryBuilder(config, domain_preferences, lang_config).build_queries()
+                         → list[BuiltGmailQuery]
+                         All query terms come from MergedLanguageConfig.query_include_terms
+                         (no longer from QueryVocabulary). Defaults to DEFAULT_LANGUAGES.
                          Builds 4 named queries: strong_shipping, order_lifecycle,
                          weak_phrases, allowlisted_domains (if allowlist non-empty)
     sender_trust.py      SenderTrustScorer, SenderTrustLevel, SenderTrustResult
@@ -67,9 +80,13 @@ src/parsli/
                          Accepts trust_scorer: SenderTrustScorer; stores trust_level,
                          trust_score, trust_reasons_json in email_messages
   processing/
-    cleaner.py           EmailCleaner → CleanedEmail
-                         _HEBREW_FOOTER_RES strips mailing-system boilerplate before analysis
-    rule_engine.py       RuleEngine(email_id, cleaned_text, sender_domain) → RuleExtractionResult
+    cleaner.py           EmailCleaner(lang_config) → CleanedEmail
+                         Builds footer/unsubscribe/shipping-signal patterns from MergedLanguageConfig.
+                         Defaults to load_language_packs(DEFAULT_LANGUAGES) when omitted.
+    rule_engine.py       RuleEngine(lang_config) → RuleExtractionResult
+                         Builds _invoice_re, _invoice_negative_re, _status_rules, and an
+                         IdentifierExtractor dynamically from MergedLanguageConfig.
+                         Defaults to load_language_packs(DEFAULT_LANGUAGES) when omitted.
                          sender_domain checked first — payment processors → is_invoice=True
                          ACTION_REQUIRED rule fires before READY_FOR_PICKUP
     extraction_orchestrator.py  Merges rules + model → FinalExtraction, persists rows
@@ -101,18 +118,42 @@ src/parsli/
   cli.py                 parsli serve | sync | rebuild
 ```
 
+## Language pack system
+
+All locale-specific phrases live in `src/parsli/languages/<code>.yaml`. The core processing
+components are language-agnostic — they accept a `MergedLanguageConfig` and build their
+compiled patterns at construction time.
+
+```python
+from parsli.languages import load_language_packs, DEFAULT_LANGUAGES
+
+lang = load_language_packs(["en", "he"])   # merge two packs
+lang = load_language_packs(["en"])         # English-only: Hebrew rules invisible
+```
+
+`AppConfig.language.enabled` (default `["en", "he"]`) controls which packs are loaded by
+`EmailProcessingService`. To add a new language: create `<code>.yaml`, add the code to
+`enabled_languages`. No Python changes required.
+
+Each YAML pack defines: `shipping_signals`, `footer_patterns`, `unsubscribe_patterns`,
+`billing_exclusion_phrases`, `shipping_override_phrases`, `tracking_context_words`,
+`order_label_patterns`, `query_include_terms`, `query_exclude_terms`,
+`query_weak_phrase_exclusions`, `allowlist_broad_terms`, `status_patterns`.
+
 ## Gmail candidate query design
 
-`GmailQueryBuilder.build_queries()` emits up to 4 named queries instead of one large OR:
+`GmailQueryBuilder.build_queries()` emits up to 4 named queries instead of one large OR.
+Query terms come entirely from `MergedLanguageConfig.query_include_terms`:
 
 | Query name | Terms used | Notes |
 |---|---|---|
-| `strong_shipping` | `strong_shipping` + `package_words` | High-confidence signals |
-| `order_lifecycle` | `order_lifecycle` | Order confirmation/shipped phrases |
-| `weak_phrases` | `weak_phrases` + extra exclusions | Low-precision, extra noise filtering |
-| `allowlisted_domains` | broad terms + `from:domain` restriction | Only when user allowlist is non-empty |
+| `strong_shipping` | `strong_shipping` + `package_words` groups | High-confidence signals |
+| `order_lifecycle` | `order_lifecycle` group | Order confirmation/shipped phrases |
+| `weak_phrases` | `weak_phrases` group + extra exclusions | Low-precision, extra noise filtering |
+| `allowlisted_domains` | `allowlist_broad_terms` + `from:domain` restriction | Only when allowlist is non-empty |
 
-Every query includes: default `exclude_terms`, `-from:` for all `default_exclude_domains` and user blocklist, `after:<date>`.
+Every query includes: `query_exclude_terms` from active packs, `-from:` for all
+`GmailConfig.default_exclude_domains` and user blocklist, `after:<date>`.
 
 `email_messages.query_source` stores which named queries matched, comma-joined: `"strong_shipping,order_lifecycle"`.
 
@@ -153,15 +194,15 @@ Also checked by `RuleEngine` at classification time (belt-and-suspenders).
 
 **Rule ordering** — `action_required` fires before `ready_for_pickup`. Payment processor domains checked before text rules.
 
-**Billing exclusion** — `_INVOICE_RE` in `processing/rule_engine.py` includes `פירוט חיובים|חיובים תקופתיים` (Hebrew periodic billing). These phrases also appear in `QueryVocabulary.exclude_terms` so the emails are not downloaded.
+**Billing exclusion** — `billing_exclusion_phrases` in language packs (`he.yaml`: `פירוט חיובים`, `חיובים תקופתיים`; `en.yaml`: `invoice`, `billing statement`, …) feed `_INVOICE_RE` in `RuleEngine`. The same Hebrew phrases appear in `he.yaml: query_exclude_terms` so periodic-billing emails are not downloaded at all.
 
-**Tracking extraction context guard** — FedEx (15-digit) and DHL (10–11 digit) patterns in `domain/identifiers.py` require a shipping keyword within 150 chars (`_NEARBY_SHIPPING_RE`). Pure-digit matches without context (phone numbers, billing IDs) are silently dropped. Format-specific carriers (UPS, Israel Post, HFD, ASOS) are extracted globally — no context guard. `TrackingIdentifier.source` carries `"body"` or `"body_near_keyword"`.
+**Tracking extraction context guard** — FedEx (15-digit) and DHL (10–11 digit) patterns in `domain/identifiers.py` require a shipping keyword within 150 chars. Context words come from `MergedLanguageConfig.tracking_context_words` (built by `IdentifierExtractor`). Pure-digit matches without context (phone numbers, billing IDs) are silently dropped. Format-specific carriers (UPS, Israel Post, HFD, ASOS) are extracted globally — no context guard. `TrackingIdentifier.source` carries `"body"` or `"body_near_keyword"`.
 
 **SQLite NULL uniqueness** — `ShipmentEventRepository.insert_if_new` uses explicit SELECT (SQLite treats NULL≠NULL in unique constraints).
 
 **Token missing** — `GmailOAuthManager.refresh_if_needed` raises `TokenMissingError`. CLI opens browser OAuth; API returns 401 + `auth_url`.
 
-**Keywords are developer config** — `QueryVocabulary` in `config.py`. Do not expose keyword editing to users via API.
+**Language packs are developer config** — YAML packs in `src/parsli/languages/`. `AppConfig.language.enabled` selects active packs. Do not expose pack editing to users via API; the planned settings UI will only allow enabling/disabling whole language codes.
 
 **Candidate match run indices** — `CandidateFetchResult.candidate_matches[i].query_run_id` holds the *index* into `query_runs` before `persist_fetch_result()` is called; it becomes the real DB id after. Do not confuse the two.
 

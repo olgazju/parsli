@@ -8,35 +8,17 @@ import re
 
 from pydantic import BaseModel
 
+from ..languages import DEFAULT_LANGUAGES, MergedLanguageConfig, load_language_packs
 from ..privacy.hashing import body_hash
 
-
-# Boilerplate patterns that add noise without useful signals.
-_UNSUBSCRIBE_RE = re.compile(
-    r"(?:unsubscribe|הסר\s*מרשימה|בטל\s*מנוי|to stop receiving|manage your preferences)"
-    r".{0,200}",
-    re.IGNORECASE | re.DOTALL,
-)
-_LEGAL_FOOTER_RE = re.compile(
-    r"(?:this email was sent|if you have received this|confidentiality notice|"
-    r"all rights reserved|©\s*\d{4}|privacy policy|terms of service)"
-    r".{0,500}",
-    re.IGNORECASE | re.DOTALL,
-)
-_REPEATED_WHITESPACE = re.compile(r"\n{3,}")
+# Language-agnostic patterns applied unconditionally.
 _TRACKING_PIXEL = re.compile(r"https?://[^\s]+\.(gif|png|jpg)\?[^\s]+", re.IGNORECASE)
 # Strip URLs from markdown links [text](url) → text, and bare https:// URLs.
 # This removes URL query parameters that contain phone numbers, token IDs, and
 # other non-tracking numeric sequences that pollute identifier extraction.
 _MARKDOWN_URL_RE = re.compile(r"\(https?://[^\s)]+\)", re.IGNORECASE)
 _BARE_URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
-
-# Hebrew mailing-system footer boilerplate — stripped before any analysis.
-_HEBREW_FOOTER_RES: list[re.Pattern[str]] = [
-    re.compile(r"הודעה זו נשלחה ל-.{0,300}", re.DOTALL),
-    re.compile(r"נשלח באמצעות.{0,300}", re.DOTALL),
-    re.compile(r"מערכת דיוור.{0,300}", re.DOTALL),
-]
+_REPEATED_WHITESPACE = re.compile(r"\n{3,}")
 
 
 class CleanedEmail(BaseModel):
@@ -47,17 +29,34 @@ class CleanedEmail(BaseModel):
     is_shipping_shaped: bool
 
 
-# Signals that strongly suggest this is a shipping/delivery email.
-_SHIPPING_SIGNALS: list[re.Pattern[str]] = [
-    re.compile(r"\b(?:tracking|shipment|delivery|dispatch|courier|customs|parcel)\b", re.I),
-    re.compile(r"\b(?:out for delivery|ready for pickup|has been delivered|been shipped)\b", re.I),
-    # Hebrew signals
-    re.compile(r"(?:משלוח|חבילה|מעקב|נשלח|מוכן לאיסוף|יצא לחלוקה|נמסר)", re.I),
-]
-
-
 class EmailCleaner:
-    """Cleans an email body string and returns a CleanedEmail DTO."""
+    """Cleans an email body string and returns a CleanedEmail DTO.
+
+    Args:
+        lang_config: Merged language configuration. Defaults to the bundled
+                     en + he packs when omitted.
+    """
+
+    def __init__(self, lang_config: MergedLanguageConfig | None = None) -> None:
+        if lang_config is None:
+            lang_config = load_language_packs(DEFAULT_LANGUAGES)
+
+        self._footer_res: list[re.Pattern[str]] = [
+            re.compile(p, re.DOTALL | re.IGNORECASE)
+            for p in lang_config.footer_patterns
+        ]
+        self._unsubscribe_res: list[re.Pattern[str]] = [
+            re.compile(p, re.DOTALL | re.IGNORECASE)
+            for p in lang_config.unsubscribe_patterns
+        ]
+        self._shipping_signal_re: re.Pattern[str] | None = (
+            re.compile(
+                "(?:" + "|".join(lang_config.shipping_signals) + ")",
+                re.IGNORECASE,
+            )
+            if lang_config.shipping_signals
+            else None
+        )
 
     def clean(self, email_id: str, raw_text: str) -> CleanedEmail:
         text = self._clean(raw_text)
@@ -69,18 +68,18 @@ class EmailCleaner:
             is_shipping_shaped=self._is_shipping_shaped(text),
         )
 
-    @staticmethod
-    def _clean(text: str) -> str:
+    def _clean(self, text: str) -> str:
         text = _TRACKING_PIXEL.sub("", text)
-        for _p in _HEBREW_FOOTER_RES:
-            text = _p.sub("", text)
-        text = _UNSUBSCRIBE_RE.sub("", text)
-        text = _LEGAL_FOOTER_RE.sub("", text)
+        for pattern in self._footer_res:
+            text = pattern.sub("", text)
+        for pattern in self._unsubscribe_res:
+            text = pattern.sub("", text)
         text = _MARKDOWN_URL_RE.sub("", text)
         text = _BARE_URL_RE.sub("", text)
         text = _REPEATED_WHITESPACE.sub("\n\n", text)
         return text.strip()
 
-    @staticmethod
-    def _is_shipping_shaped(text: str) -> bool:
-        return any(p.search(text) for p in _SHIPPING_SIGNALS)
+    def _is_shipping_shaped(self, text: str) -> bool:
+        return self._shipping_signal_re is not None and bool(
+            self._shipping_signal_re.search(text)
+        )

@@ -1,0 +1,201 @@
+code: en
+
+# ── Shipping shape detection ───────────────────────────────────────────────────
+# Used by EmailCleaner.is_shipping_shaped. Raw regex patterns.
+shipping_signals:
+  - '\btracking\b'
+  - '\bshipment\b'
+  - '\bdelivery\b'
+  - '\bdispatch\b'
+  - '\bcourier\b'
+  - '\bcustoms\b'
+  - '\bparcel\b'
+  - 'out for delivery'
+  - 'ready for pickup'
+  - 'has been delivered'
+  - 'been shipped'
+
+# ── Footer / boilerplate stripping ────────────────────────────────────────────
+# Applied by EmailCleaner with re.DOTALL | re.IGNORECASE.
+footer_patterns:
+  - 'this email was sent.{0,500}'
+  - 'if you have received this.{0,500}'
+  - 'confidentiality notice.{0,500}'
+  - 'all rights reserved.{0,500}'
+  - '©\s*\d{4}.{0,500}'
+  - 'privacy policy.{0,500}'
+  - 'terms of service.{0,500}'
+
+unsubscribe_patterns:
+  - 'unsubscribe.{0,200}'
+  - 'to stop receiving.{0,200}'
+  - 'manage your preferences.{0,200}'
+
+# ── Invoice / billing detection ───────────────────────────────────────────────
+billing_exclusion_phrases:
+  - '\binvoice\b'
+  - 'tax invoice'
+  - 'billing statement'
+  - 'account statement'
+
+# Shipping signals that override the invoice flag (download link, etc.)
+shipping_override_phrases:
+  - 'tracking\s+(?:number|code)'
+  - 'shipment'
+  - 'has\s+(?:shipped|been\s+shipped)'
+  - 'out\s+for\s+delivery'
+  - 'your\s+order\s+(?:is\s+on\s+its\s+way|has\s+shipped)'
+
+# ── Identifier extraction ─────────────────────────────────────────────────────
+# Raw regex patterns used to decide whether a pure-digit number appears in a
+# shipping context (DHL/FedEx context guard).
+tracking_context_words:
+  - 'tracking'
+  - 'tracking\s+number'
+  - 'shipment'
+  - 'parcel'
+  - 'delivery'
+
+# Named regex patterns for extracting order numbers.
+# Each entry: name -> capturing-group regex (group 1 = the order value).
+order_label_patterns:
+  generic: '\border\s*(?:#|no\.?\b|number\b|num\b|:)\s*[:#]?\s*#?\s*([A-Z0-9\-]{4,30})\b'
+
+# ── Gmail query terms ─────────────────────────────────────────────────────────
+query_include_terms:
+  strong_shipping:
+    - 'shipped'
+    - 'delivered'
+    - '"tracking number"'
+    - '"out for delivery"'
+    - '"estimated delivery"'
+    - 'dispatch'
+    - 'customs'
+  package_words:
+    - '"your package"'
+    - '"your shipment"'
+    - '"your parcel"'
+  order_lifecycle:
+    - '"order confirmation"'
+    - '"thanks for your order"'
+    - '"your order has shipped"'
+    - '"your order is on its way"'
+  weak_phrases:
+    - '"on its way"'
+    - '"your order"'
+
+query_exclude_terms:
+  - '"Tax Invoice"'
+  - 'unsubscribe'
+  - 'booking'
+  - 'ticket'
+  - 'tickets'
+
+query_weak_phrase_exclusions:
+  - '"your request"'
+  - '"request is on its way"'
+
+allowlist_broad_terms:
+  - 'shipment'
+  - 'order'
+  - 'tracking'
+  - 'delivery'
+  - 'parcel'
+
+# ── Status phrase patterns ────────────────────────────────────────────────────
+# Raw regex patterns per status. Combined into one alternation per status.
+# Listed most-specific first to aid readability (engine controls precedence).
+status_patterns:
+  delivered:
+    - 'has been delivered'
+    - 'was delivered'
+    - 'successfully delivered'
+    - 'delivery complete'
+    - 'your order has been delivered'
+
+  action_required:
+    - 'collect before'
+    - 'last day to collect'
+    - 'return deadline'
+    - 'action required'
+    - 'will be returned'
+    - 'collect.*?before.*?return'
+
+  ready_for_pickup:
+    - 'ready for (?:pickup|collection)'
+    - 'available for collection'
+    - 'pick up your'
+    - 'collect your (?:parcel|package)'
+
+  payment_required:
+    - 'customs duty'
+    - 'import duty'
+    - 'customs fee'
+    - 'pay.*?(?:customs|duty|fee)'
+    - 'payment required'
+    - 'fee of'
+
+  out_for_delivery:
+    - 'out for delivery'
+    - 'on its way to you'
+    - 'with our delivery driver'
+
+  customs_released:
+    - 'cleared customs'
+    - 'released from customs'
+    - 'customs clearance complete'
+
+  customs_pending:
+    - 'held at customs'
+    - 'pending customs'
+    - 'customs inspection'
+    - 'awaiting customs'
+
+  handed_to_local_carrier:
+    - 'handed to'
+    - 'transferred to'
+    - 'passed to'
+    - 'local carrier'
+    - 'last mile'
+
+  arrived_in_destination_country:
+    - 'arrived in'
+    - 'has arrived in'
+    - 'entered.*?country'
+
+  delayed_or_problem:
+    - 'delivery(?:\s+\w+){0,3}\s+delayed'
+    - 'delayed(?:\s+\w+){0,3}\s+delivery'
+    - 'shipment\s+delayed'
+    - 'delay(?:ed)?\s+in\s+(?:transit|delivery|shipment)'
+    - 'cannot be delivered'
+    - 'delivery attempt failed'
+    - 'delivery exception'
+    - 'undeliverable'
+    - 'address not found'
+
+  in_transit:
+    - 'in transit'
+    - 'on its way'
+    - 'in delivery'
+    - 'en route'
+
+  received_by_carrier:
+    - 'received by carrier'
+    - 'picked up by'
+    - 'accepted by'
+    - 'collected by carrier'
+
+  shipped:
+    - 'has shipped'
+    - 'has been shipped'
+    - 'is on its way'
+    - 'dispatched'
+    - 'your order.*?ship'
+    - 'item.*?shipped'
+
+  order_confirmed:
+    - 'order confirmed'
+    - 'order received'
+    - 'thank you for your order'
+    - 'order.*?placed'

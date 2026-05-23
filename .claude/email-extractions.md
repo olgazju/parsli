@@ -7,12 +7,17 @@ database.
 
 ---
 
+## Recent changes (2026-05-23)
+
+- **Language-pack architecture** — all hardcoded Hebrew/English phrases have been extracted from Python into `src/parsli/languages/en.yaml` and `he.yaml`. `EmailCleaner`, `RuleEngine`, `IdentifierExtractor`, and `GmailQueryBuilder` now accept a `MergedLanguageConfig` (built by `load_language_packs(codes)`). Core logic is fully language-agnostic. `QueryVocabulary` removed; replaced by `LanguageConfig(enabled: list[str])` in `AppConfig`. `IdentifierExtractor` is now a class; module-level free functions kept as backward-compat wrappers.
+- **`AppConfig.language.enabled`** — defaults to `["en", "he"]`; controls which packs are active for the entire processing pipeline.
+
 ## Recent changes (2026-05-22)
 
-- **Hebrew footer stripping** (`processing/cleaner.py`) — three `_HEBREW_FOOTER_RES` patterns strip mailing-system boilerplate (`הודעה זו נשלחה ל-…`, `נשלח באמצעות…`, `מערכת דיוור…`) before any analysis.
-- **Billing invoice detection** (`processing/rule_engine.py`) — `_INVOICE_RE` expanded with `פירוט חיובים|חיובים תקופתיים`; periodic-billing emails (e.g. Moovit/Pango) are classified `is_invoice=True`.
-- **Gmail billing exclusions** (`config.py`) — `"פירוט חיובים"` and `"חיובים תקופתיים"` added to `QueryVocabulary.exclude_terms`; these emails are not downloaded at all.
-- **Context-guarded tracking extraction** (`domain/identifiers.py`) — FedEx (15-digit) and DHL (10–11 digit) pure-numeric patterns now require a shipping keyword within 150 chars. `TrackingIdentifier` gains a `source` field (`"body"` or `"body_near_keyword"`). Format-specific carriers (UPS, Israel Post, HFD, ASOS) are unaffected.
+- **Hebrew footer stripping** — three footer patterns strip mailing-system boilerplate (`הודעה זו נשלחה ל-…`, `נשלח באמצעות…`, `מערכת דיוור…`) before any analysis. Now in `he.yaml: footer_patterns`.
+- **Billing invoice detection** — `פירוט חיובים|חיובים תקופתיים` marks periodic-billing emails as `is_invoice=True`. Now in `he.yaml: billing_exclusion_phrases`.
+- **Gmail billing exclusions** — Hebrew periodic-billing terms excluded at query level so they are never downloaded. Now in `he.yaml: query_exclude_terms`.
+- **Context-guarded tracking extraction** — FedEx (15-digit) and DHL (10–11 digit) pure-numeric patterns require a shipping keyword within 150 chars. `TrackingIdentifier` gains a `source` field (`"body"` or `"body_near_keyword"`). Context words now in `tracking_context_words` in language packs.
 - **ASOS↔HFD merge removed** (`domain/merge.py`) — the hardcoded `ASO*↔ECSA*` cross-family merge rule is gone. `can_merge_tracking_numbers` now: identical → merge, same family + different ID → deny, different families → deny. No merchant-specific merge rules remain.
 
 ---
@@ -90,11 +95,12 @@ to trigger a new OAuth flow — it carries the `account_id` that failed.
 ```
 AppConfig
 ├── app_dir              Path to .parsli/
+├── language: LanguageConfig
+│   └── enabled          Active language codes, e.g. ["en", "he"] (default)
 ├── gmail: GmailConfig
 │   ├── lookback_days    How many days back to search (default 60)
-│   ├── query_category_filter  Optional Gmail category clause, e.g.
-│   │                          "(category:updates OR category:primary)"
-│   └── vocabulary: QueryVocabulary
+│   ├── query_category_filter  Optional Gmail category clause
+│   └── default_exclude_domains  Payment processors excluded at query level
 ├── model: ModelConfig   LLM provider, model name, endpoint URL
 ├── privacy: PrivacyConfig
 │   ├── debug_store_email_artifacts  If True, stores raw JSON + body to disk
@@ -103,21 +109,38 @@ AppConfig
 └── database: DatabaseConfig
 ```
 
-### 2.2 `QueryVocabulary` — keyword groups
+### 2.2 Language packs — `src/parsli/languages/`
 
-`QueryVocabulary` is developer-controlled config — **never exposed to users via
-the API**. It groups keywords into named buckets so the query builder can emit
-separate targeted queries instead of one large OR clause:
+All locale-specific phrases live in YAML files, one per language code. They are
+developer-controlled — **never exposed to users via the API**.
 
-| Group | Purpose |
+```python
+from parsli.languages import load_language_packs, DEFAULT_LANGUAGES
+lang = load_language_packs(["en", "he"])   # returns MergedLanguageConfig
+```
+
+Each pack defines these sections (all raw regex pattern lists):
+
+| Section | Consumed by |
 |---|---|
-| `strong_shipping` | High-confidence shipping signals: `"shipped"`, `"tracking number"`, `"out for delivery"`, Hebrew equivalents |
-| `package_words` | Direct package references: `"your package"`, `"your shipment"`, `"חבילה"`, `"משלוח"` |
-| `order_lifecycle` | Order-confirmation phrases: `"order confirmation"`, `"thanks for your order"`, `"אישור ההזמנה"` |
-| `weak_phrases` | Low-precision phrases: `"on its way"`, `"your order"` — noisy, needs extra exclusions |
-| `exclude_terms` | Applied to every query: `"פרסומת"` (ad), `"חשבונית מס"` (tax invoice), `"unsubscribe"`, `"booking"`, `"ticket"` |
-| `weak_phrase_exclusions` | Extra exclusions only for `weak_phrases`: `"your request"`, `"request is on its way"` |
-| `default_exclude_domains` | Payment processors excluded at query level: `paypal.com`, `stripe.com`, `payplus.co.il`, `cardcom.co.il`, `tranzila.com`, `isracard.co.il`, `booking.com` |
+| `shipping_signals` | `EmailCleaner.is_shipping_shaped` |
+| `footer_patterns` | `EmailCleaner._clean` — strips boilerplate |
+| `unsubscribe_patterns` | `EmailCleaner._clean` — strips unsubscribe footers |
+| `billing_exclusion_phrases` | `RuleEngine` — builds `_INVOICE_RE` |
+| `shipping_override_phrases` | `RuleEngine` — builds `_INVOICE_NEGATIVE_RE` |
+| `tracking_context_words` | `IdentifierExtractor` — nearby-context guard for DHL/FedEx |
+| `order_label_patterns` | `IdentifierExtractor` — language-specific order-number labels |
+| `query_include_terms` | `GmailQueryBuilder` — terms for each named query group |
+| `query_exclude_terms` | `GmailQueryBuilder` — global query exclusions |
+| `query_weak_phrase_exclusions` | `GmailQueryBuilder` — extra exclusions for `weak_phrases` query |
+| `allowlist_broad_terms` | `GmailQueryBuilder` — terms for `allowlisted_domains` query |
+| `status_patterns.<status_name>` | `RuleEngine` — compiled into one regex per status |
+
+Merging multiple packs concatenates all list fields. `order_label_patterns` and
+`query_include_terms` are merged by key (later packs extend earlier ones per group).
+
+`default_exclude_domains` (payment processors) moved to `GmailConfig` — not
+language-specific, so they are not in the YAML packs.
 
 ---
 
@@ -154,7 +177,9 @@ port, path components, and lowercases before storing.
 
 `gmail/query_builder.py` · `build_queries() → list[BuiltGmailQuery]`
 
-The builder is instantiated with `GmailConfig` + `DomainPreferences`, then
+The builder is instantiated with `GmailConfig` + `DomainPreferences` + an
+optional `MergedLanguageConfig` (defaults to `load_language_packs(DEFAULT_LANGUAGES)`).
+All query keyword terms come from the language config — not from Python constants.
 `build_queries()` is called once per sync. It computes the `after:` cutoff date
 from `lookback_days` and constructs up to **4 named queries**:
 
@@ -469,8 +494,10 @@ GmailClient(credentials)          ← google-api-python-client wrapper
 DomainPreferenceService(session)  ← reads domain_preferences table
         │  (allowlist, blocklist, exclude_senders)
         ▼
-GmailQueryBuilder(config, domain_prefs)
-        │  ← QueryVocabulary (developer-controlled keyword groups)
+load_language_packs(config.language.enabled)  ← en.yaml + he.yaml (or subset)
+        │  → MergedLanguageConfig (query terms, status phrases, signals, …)
+        ▼
+GmailQueryBuilder(config, domain_prefs, lang_config)
         ▼
 .build_queries() → [BuiltGmailQuery × 3–4]
         │
