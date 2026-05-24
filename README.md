@@ -13,13 +13,12 @@ analytics — your inbox stays yours.
 
 ![Parsli dashboard — Parcels view with stat cards, search, filters, and per-parcel timeline](docs/screenshot.png)
 
-<!-- DEMO VIDEO -- Drag docs/demo.mov into any GitHub issue draft to get a
-     user-content CDN URL, then paste it on the line below (replace the
-     placeholder). GitHub renders that URL as an inline video player. -->
+---
 
-https://github.com/user-attachments/assets/REPLACE-WITH-YOUR-UPLOAD-ID
+## DEMO:
 
-> *(The line above is a placeholder. See the [README contributing notes](#video-demo) below to insert your own upload URL.)*
+<img width="1000" height="753" alt="demo (3)" src="https://github.com/user-attachments/assets/68635f67-3db7-4c03-8ac7-c2cd8de2e3dd" />
+
 
 ---
 
