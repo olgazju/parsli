@@ -14,9 +14,9 @@ engine = RuleEngine()
 
 def test_hebrew_footer_stripped_before_classification() -> None:
     body = (
-        "שלום Olga Braginskaya,\n"
+        "שלום Test User,\n"
         "פירוט החיובים התקופתי שלך כבר כאן!\n"
-        "הודעה זו נשלחה ל- olgazjuzju@gmail.com על ידי DoNotReply@moovit-pango.co.il\n"
+        "הודעה זו נשלחה ל- user@example.com על ידי DoNotReply@moovit-pango.co.il\n"
         "נשלח באמצעות מסר עשר מערכת דיוור אלקטרוני ומסרונים"
     )
     result = cleaner.clean("x", body)

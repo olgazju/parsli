@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini progress tracker</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .demo { background: #f5f0e8; border-radius: 12px; padding: 18px 22px; border: 1px solid #ddd8cf; margin-bottom: 8px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #7a8a7e; margin-bottom: 10px; }
+  .tracker { display: flex; align-items: center; margin-bottom: 4px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; z-index: 1; }
+  .dot.past { background: #6b8f6e; }
+  .dot.cur { background: #87ceeb; border: 2px solid #6b8f6e; box-shadow: 0 0 0 3px rgba(135,206,235,.25); }
+  .dot.fut { background: #d5cec2; }
+  .line { flex: 1; height: 3px; border-radius: 2px; }
+  .line.past { background: #6b8f6e; }
+  .line.fut { background: #d5cec2; }
+  .labels { display: flex; justify-content: space-between; }
+  .labels span { font-size: 10px; color: #7a8a7e; font-weight: 700; flex: 1; text-align: center; }
+  .labels span:first-child { text-align: left; }
+  .labels span:last-child { text-align: right; }
+</style>
+<div class="demo">
+  <div class="lbl">Step 3 of 4 — Arriving</div>
+  <div class="tracker">
+    <div class="dot past"></div><div class="line past"></div>
+    <div class="dot past"></div><div class="line past"></div>
+    <div class="dot cur"></div><div class="line fut"></div>
+    <div class="dot fut"></div>
+  </div>
+  <div class="labels"><span>Ordered</span><span>Shipped</span><span>Arriving</span><span>Delivered</span></div>
+</div>
+
+</div></body></html>

@@ -1,0 +1,259 @@
+/* ═══════════════════════════════════════════════════════════════
+   Parsli Design System — Foundations
+   Colors, typography, spacing, radius, motion.
+   Import this once at the top of any artifact:
+     <link rel="stylesheet" href="colors_and_type.css">
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Web fonts ──────────────────────────────────────────────────
+   Primary: Nunito (used by parsli/frontend). Quicksand and Fredoka
+   are listed in the brand guide as alternates; load on demand. */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     CORE PALETTE — warm, muted, slightly dusty.
+     Greens + tans dominate. Pops of red/yellow/blue for status.
+     ═══════════════════════════════════════════════════════════ */
+  --c-dark-olive:  #3d4a3a;
+  --c-olive:       #6b8f6e;
+  --c-sage:        #8aab8c;
+  --c-sky:         #87ceeb;
+  --c-tan:         #c4956a;
+  --c-jacket-red:  #b54b3a;
+  --c-yellow:      #e8b44c;
+  --c-pink:        #f2a7b3;
+  --c-metal:       #7a8a7e;
+  --c-cream:       #f5f0e8;
+  --c-beige:       #d5cec2;
+
+  /* Page background — slightly darker cream so cards lift off it */
+  --c-bg:          #e5dfd4;
+  --c-surface:     #f5f0e8;
+  --c-surface-hi:  #faf7f2;
+
+  /* Borders — thin, low-contrast */
+  --c-border:        #c8bfb2;
+  --c-border-light:  #ddd8cf;
+
+  /* ═══════════════════════════════════════════════════════════
+     SEMANTIC TEXT
+     ═══════════════════════════════════════════════════════════ */
+  --fg-1: #3d4a3a;          /* primary text, headings */
+  --fg-2: #7a8a7e;          /* secondary text, meta, labels */
+  --fg-3: #a5a8a0;          /* tertiary, disabled */
+  --fg-on-dark: #f5f0e8;    /* text on dark olive surfaces */
+  --fg-on-dark-2: #a8b8a6;  /* secondary text on dark olive */
+
+  /* Dark surface (used by sidebar, dark-mode shell) */
+  --c-shell-dark:        #3d4a3a;
+  --c-shell-dark-hi:     #4a5847;
+  --c-shell-dark-line:   rgba(255,255,255,.07);
+
+  /* ═══════════════════════════════════════════════════════════
+     SEMANTIC STATE — shipment lifecycle
+     ═══════════════════════════════════════════════════════════ */
+  --s-shipped:    var(--c-sky);          /* in-transit / active */
+  --s-transit:    var(--c-sky);
+  --s-arriving:   var(--c-yellow);       /* attention — arriving today */
+  --s-delivered:  var(--c-olive);        /* success */
+  --s-error:      var(--c-jacket-red);   /* alerts, delays */
+  --s-pending:    var(--c-metal);        /* unknown, muted */
+  --s-order:      var(--c-beige);        /* order placed, not shipped */
+
+  /* ═══════════════════════════════════════════════════════════
+     BADGE / PILL TINT PAIRS
+     Light tinted background, darker text from the same family.
+     ═══════════════════════════════════════════════════════════ */
+  --badge-blue-bg:    #daeef7; --badge-blue-fg:    #3a6a82;
+  --badge-green-bg:   #dce8dc; --badge-green-fg:   #3d5a3f;
+  --badge-yellow-bg:  #fdf3d7; --badge-yellow-fg:  #8a6a1e;
+  --badge-red-bg:     #f5dcd7; --badge-red-fg:     #7a2e22;
+  --badge-gray-bg:    #e8e4dd; --badge-gray-fg:    #5a6358;
+  --badge-tan-bg:     #ebdcc8; --badge-tan-fg:     #6e4a26;
+  --badge-pink-bg:    #fbe2e7; --badge-pink-fg:    #8a3848;
+
+  /* ═══════════════════════════════════════════════════════════
+     TYPOGRAPHY — Nunito, rounded retro-modern sans
+     ═══════════════════════════════════════════════════════════ */
+  --font-sans:    'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-alt-1:   'Quicksand', system-ui, sans-serif;     /* geometric retro */
+  --font-alt-2:   'Fredoka',  system-ui, sans-serif;      /* chunky, playful */
+  --font-mono:    'Courier New', Courier, ui-monospace, monospace;
+
+  /* Type scale (px units intentional — UI design system) */
+  --t-page-h:    24px;  /* page heading */
+  --t-section:   18px;  /* section heading */
+  --t-card-h:    15px;  /* card title */
+  --t-body:      14px;  /* body text */
+  --t-meta:      12px;  /* labels, meta */
+  --t-small:     11px;  /* small caps */
+  --t-tiny:      10px;  /* captions */
+
+  /* Weights */
+  --w-regular:  400;
+  --w-medium:   500;
+  --w-semi:     600;
+  --w-bold:     700;
+  --w-black:    800;
+
+  /* Line heights */
+  --lh-tight:   1.15;
+  --lh-snug:    1.35;
+  --lh-normal:  1.55;
+  --lh-loose:   1.75;
+
+  /* Letter spacing tokens — generous on the brand, esp. small caps */
+  --ls-logo:    1.5px;
+  --ls-caps:    2.5px;   /* tagline, small caps */
+  --ls-label:   1px;     /* stat labels */
+  --ls-tight:  -0.3px;   /* page title */
+
+  /* ═══════════════════════════════════════════════════════════
+     RADIUS — generous, retro-friendly
+     ═══════════════════════════════════════════════════════════ */
+  --r-card:    12px;
+  --r-pill:    20px;
+  --r-input:   10px;
+  --r-btn:     10px;
+  --r-chip:     6px;
+  --r-sm:       4px;
+
+  /* ═══════════════════════════════════════════════════════════
+     SPACING — 4px base, used throughout the brand
+     ═══════════════════════════════════════════════════════════ */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 64px;
+
+  /* ═══════════════════════════════════════════════════════════
+     BORDERS & STROKES — thin, muted
+     No drop shadows in brand. Depth comes from color + layering.
+     ═══════════════════════════════════════════════════════════ */
+  --bd-hair:    1px solid var(--c-border-light);
+  --bd-card:    1px solid var(--c-border-light);
+  --bd-status:  4px;     /* left-accent strip on parcel cards */
+  --bd-meter:   3px;     /* bottom accent strip on stat cards */
+
+  /* The brand allows ONE soft shadow on hover (lift effect) */
+  --shadow-hover: 0 2px 12px rgba(61,74,58,.08);
+  --shadow-toast: 0 4px 20px rgba(0,0,0,.18);
+
+  /* ═══════════════════════════════════════════════════════════
+     MOTION — short, friendly, no bounce on UI
+     "Thunk", "pneumatic", "shrug" reserved for big moments.
+     ═══════════════════════════════════════════════════════════ */
+  --dur-fast:    120ms;
+  --dur-base:    180ms;
+  --dur-slow:    300ms;
+  --dur-expand:  350ms;
+  --ease-std:    cubic-bezier(.4, 0, .2, 1);
+  --ease-out:    cubic-bezier(.2, .8, .4, 1);
+
+  /* ═══════════════════════════════════════════════════════════
+     TEXTURE — subtle dot grid behind the whole app
+     ═══════════════════════════════════════════════════════════ */
+  --texture-dot: radial-gradient(circle, rgba(61,74,58,.12) 1px, transparent 0);
+  --texture-dot-size: 22px 22px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEMANTIC ELEMENT STYLES — opt in by class on a wrapper.
+   Use this when you want sensible defaults without hand-writing
+   every type rule. Skip if you're styling element-by-element.
+   ═══════════════════════════════════════════════════════════════ */
+.parsli-typography {
+  font-family: var(--font-sans);
+  color: var(--fg-1);
+  line-height: var(--lh-normal);
+}
+
+.parsli-typography h1,
+.parsli-typography .h1 {
+  font-size: var(--t-page-h);
+  font-weight: var(--w-black);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-tight);
+  color: var(--fg-1);
+}
+
+.parsli-typography h2,
+.parsli-typography .h2 {
+  font-size: var(--t-section);
+  font-weight: var(--w-bold);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+
+.parsli-typography h3,
+.parsli-typography .h3,
+.parsli-typography .card-title {
+  font-size: var(--t-card-h);
+  font-weight: var(--w-bold);
+  line-height: var(--lh-snug);
+  color: var(--fg-1);
+}
+
+.parsli-typography p,
+.parsli-typography .body {
+  font-size: var(--t-body);
+  font-weight: var(--w-regular);
+  color: var(--fg-1);
+}
+
+.parsli-typography .meta,
+.parsli-typography .label {
+  font-size: var(--t-meta);
+  font-weight: var(--w-regular);
+  color: var(--fg-2);
+}
+
+.parsli-typography .small-caps {
+  font-size: var(--t-small);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.parsli-typography .stat-label {
+  font-size: var(--t-tiny);
+  font-weight: var(--w-bold);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+.parsli-typography code,
+.parsli-typography .mono {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  color: var(--fg-2);
+}
+
+/* The brand logo — lowercase, generous tracking, sage "li" */
+.parsli-logo {
+  font-family: var(--font-sans);
+  font-size: 26px;
+  font-weight: var(--w-black);
+  letter-spacing: var(--ls-logo);
+  color: var(--fg-1);
+}
+.parsli-logo em {
+  font-style: normal;
+  color: var(--c-sage);
+}
+.parsli-tagline {
+  font-size: 9px;
+  font-weight: var(--w-semi);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  color: var(--fg-2);
+  margin-top: var(--sp-1);
+}

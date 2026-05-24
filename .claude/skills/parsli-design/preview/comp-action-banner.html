@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Action & privacy banners</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .banner { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; }
+  .red { background: #f5dcd7; color: #7a2e22; }
+  .yellow { background: #fdf3d7; color: #8a6a1e; }
+  .green { background: #dce8dc; color: #3d5a3f; font-weight: 400; }
+  .green strong { font-weight: 800; }
+  .blue { background: #daeef7; color: #3a6a82; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .red .dot { background: #b54b3a; animation: pulse 2s ease-in-out infinite; }
+  .yellow .dot { background: #e8b44c; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+  .ic { font-size: 16px; line-height: 1; }
+</style>
+<div class="stack">
+  <div class="banner red"><div class="dot"></div><span>Action required — expand to see details.</span></div>
+  <div class="banner yellow"><div class="dot"></div><span>Payment required — expand to see details.</span></div>
+  <div class="banner green"><span class="ic">🔒</span><span><strong>Your data never leaves this device.</strong> All processing happens locally — no cloud, no servers. Powered by a local AI model.</span></div>
+  <div class="banner blue"><span class="ic">⏳</span><span>Waiting for Google sign-in — check the window that just opened.</span></div>
+</div>
+
+</div></body></html>

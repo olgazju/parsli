@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Toast & spinner</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .stage { background: #e5dfd4; padding: 18px; border-radius: 12px; position: relative; min-height: 110px; border: 1px solid #c8bfb2; display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .toast { background: #3d4a3a; color: #f5f0e8; padding: 10px 20px; border-radius: 10px; font: 600 13px var(--font-sans); box-shadow: 0 4px 20px rgba(0,0,0,.18); }
+  .toast.success { background: #6b8f6e; }
+  .toast.error { background: #b54b3a; }
+  .spinner { width: 22px; height: 22px; border: 3px solid #ddd8cf; border-top-color: #8aab8c; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .lbl { position: absolute; top: 8px; left: 14px; font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #7a8a7e; }
+</style>
+<div class="stage">
+  <div class="lbl">Floating UI</div>
+  <div class="toast">Marked as received.</div>
+  <div class="toast success">✓ Sync complete</div>
+  <div class="toast error">Sign-in failed</div>
+  <div class="spinner"></div>
+</div>
+
+</div></body></html>

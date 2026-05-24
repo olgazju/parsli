@@ -12,7 +12,12 @@ from pydantic import BaseModel
 from ..config import ModelConfig
 from ..domain.email_types import EmailType, email_type_from_status
 from ..domain.statuses import ShipmentStatus
-from ..model.base import LocalModelClient, ModelAuditResult, ModelClassificationResult
+from ..model.base import (
+    LocalModelClient,
+    ModelAuditResult,
+    ModelClassificationResult,
+    ModelUnavailableError,
+)
 from ..model.prompts import (
     build_model_text_preview,
     format_audit_prompt,
@@ -146,6 +151,8 @@ class ModelClassifier:
         t0 = time.monotonic()
         try:
             result = self._model.extract(prompt, response_model=ModelClassificationResult)  # type: ignore[union-attr]
+        except ModelUnavailableError:
+            raise
         except Exception:
             latency_ms = (time.monotonic() - t0) * 1000
             return None, ModelCallObservability(
@@ -195,6 +202,8 @@ class ModelClassifier:
         t0 = time.monotonic()
         try:
             audit = self._model.extract(prompt, response_model=ModelAuditResult)  # type: ignore[union-attr]
+        except ModelUnavailableError:
+            raise
         except Exception:
             latency_ms = (time.monotonic() - t0) * 1000
             return None, ModelCallObservability(

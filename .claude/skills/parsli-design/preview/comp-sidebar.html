@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sidebar nav</title>
+<link rel="stylesheet" href="card.css">
+</head>
+<body><div class="preview-root">
+<style>
+  .panel { background: #3d4a3a; border-radius: 12px; padding: 18px 0; width: 220px; }
+  .logo-area { padding: 0 20px 18px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .logo { font-size: 22px; font-weight: 800; color: #f5f0e8; letter-spacing: 1.5px; }
+  .logo em { font-style: normal; color: #8aab8c; }
+  .tag { font-size: 8.5px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: #a8b8a6; margin-top: 4px; }
+  .nav { padding: 12px 10px 0; display: flex; flex-direction: column; gap: 2px; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #a8b8a6; font-size: 13px; font-weight: 600; border-left: 3px solid transparent; }
+  .item.active { background: rgba(255,255,255,.08); color: #f5f0e8; border-left-color: #8aab8c; }
+  .ic { font-size: 14px; width: 18px; text-align: center; }
+</style>
+<div style="display:flex;gap:14px;align-items:flex-start">
+  <div class="panel">
+    <div class="logo-area">
+      <div class="logo">pars<em>li</em></div>
+      <div class="tag">LOCAL PARCEL INTELLIGENCE</div>
+    </div>
+    <div class="nav">
+      <div class="item active"><span class="ic">📦</span>Parcels</div>
+      <div class="item"><span class="ic">📥</span>Sources</div>
+      <div class="item"><span class="ic">⚙️</span>Preferences</div>
+    </div>
+  </div>
+  <div style="font-size:11px;color:#7a8a7e;line-height:1.6;padding-top:10px">
+    <div style="font-weight:700;color:#3d4a3a;text-transform:uppercase;letter-spacing:1px;font-size:10px;margin-bottom:8px">Notes</div>
+    Dark olive shell — the only dark surface.<br>
+    208px wide, sticky to the viewport edge.<br>
+    Plain labels by default;<br>
+    themed names ("Comms Array", etc.)<br>
+    swap in when Retro Station is active.<br>
+    Sage left-stripe marks the active item.
+  </div>
+</div>
+</div></body></html>

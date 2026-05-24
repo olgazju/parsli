@@ -9,6 +9,17 @@ from ..domain.statuses import ShipmentStatus
 T = TypeVar("T", bound=BaseModel)
 
 
+class ModelUnavailableError(Exception):
+    """Raised when the local model endpoint is unreachable or misconfigured.
+
+    Distinct from per-email errors (timeouts, malformed JSON, validation
+    failures) — those are transient and should fall back to rules-only for
+    that email. ModelUnavailableError means the whole pipeline can't make
+    further model calls, so the caller (sync service) should abort and
+    surface the failure to the user.
+    """
+
+
 class LocalModelClient(Protocol):
     """Provider-agnostic interface for local-model extraction.
 

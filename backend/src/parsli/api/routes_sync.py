@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from ..config import AppConfig
 from ..db.repositories import EmailAccountRepository, GmailSyncStateRepository
 from ..gmail.auth import GmailOAuthManager, TokenMissingError
+from ..model.base import ModelUnavailableError
 from ..privacy.hashing import sha256_hex
 from ..services.sync_service import SyncService
 
@@ -78,7 +79,7 @@ def make_sync_router(
         return _auth_page(success=True)
 
     def _sync_or_401(account_id: str, fn) -> SyncResult:
-        """Run a sync function, converting TokenMissingError into a 401 with auth_url."""
+        """Run a sync function, mapping known failures to actionable HTTP errors."""
         try:
             result = fn()
         except TokenMissingError:
@@ -88,6 +89,10 @@ def make_sync_router(
                 status_code=401,
                 detail={"error": "token_missing", "auth_url": auth_url},
             )
+        except ModelUnavailableError as exc:
+            # The local model server (LM Studio / llama-cpp) is unreachable or
+            # has no model loaded. Surface this so the user can fix it and retry.
+            raise HTTPException(status_code=503, detail=str(exc))
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
         return SyncResult(account_id=account_id, **result)

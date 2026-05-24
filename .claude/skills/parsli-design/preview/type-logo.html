@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Logo treatment</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .panel { border-radius: 12px; padding: 24px 20px; border: 1px solid #ddd8cf; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .light-mode { background: #f5f0e8; }
+  .dark-mode  { background: #3d4a3a; border-color: #2d3a2a; }
+  .logo  { font-size: 36px; font-weight: 800; letter-spacing: 1.5px; }
+  .dark-mode .logo { color: #f5f0e8; }
+  .light-mode .logo { color: #3d4a3a; }
+  .dark-mode .logo em { color: #87ceeb; font-style: normal; }
+  .light-mode .logo em { color: #8aab8c; font-style: normal; }
+  .tag { font-size: 9px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; }
+  .light-mode .tag { color: #7a8a7e; }
+  .dark-mode .tag { color: #a8b8a6; }
+  .dot-i { display: inline-block; position: relative; }
+  .parcel { display: inline-block; width: 9px; height: 8px; background: #c4956a; border-radius: 1.5px; position: relative; vertical-align: super; margin-left: -7px; margin-right: -2px; }
+  .parcel::before { content:''; position: absolute; inset: 0; background: linear-gradient(#3d4a3a, #3d4a3a) center/1px 100% no-repeat, linear-gradient(#3d4a3a, #3d4a3a) center/100% 1px no-repeat; }
+  .dark-mode .parcel { background: #e8b44c; }
+</style>
+<div class="wrap">
+  <div class="panel light-mode">
+    <div class="logo">pars<em>l<span class="dot-i"><span class="parcel"></span>i</span></em></div>
+    <div class="tag">LOCAL PARCEL INTELLIGENCE</div>
+  </div>
+  <div class="panel dark-mode">
+    <div class="logo">pars<em>l<span class="dot-i"><span class="parcel"></span>i</span></em></div>
+    <div class="tag">LOCAL PARCEL INTELLIGENCE</div>
+  </div>
+</div>
+
+</div></body></html>

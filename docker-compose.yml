@@ -1,0 +1,64 @@
+# Parsli local stack — backend (FastAPI) + frontend (React/Vite served by nginx).
+#
+# The local model server (LM Studio) runs on the host machine, not inside
+# Docker. LM Studio is a GUI desktop app with no clean headless container
+# story; we reach it from the backend container via host.docker.internal.
+#
+# Quick start:
+#   1. Start LM Studio on the host, load google/gemma-4-e4b, click "Start Server".
+#   2. Drop credentials.json into ./backend/.parsli/ (or override via PARSLI_DATA_DIR).
+#   3. docker compose up --build
+#   4. Open http://localhost:5173
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: parsli-backend
+    restart: unless-stopped
+    ports:
+      # Exposed on the host so Google can hit /api/auth/callback during OAuth.
+      # The Google Cloud Console redirect URI must match http://localhost:8000/api/auth/callback.
+      - "8000:8000"
+    environment:
+      # All persistent state lives under /data — bind-mounted from the host.
+      PARSLI_APP_DIR: /data
+      PARSLI_DATABASE__SQLITE_PATH: /data/parsli.db
+
+      # Point at LM Studio running on the host. host.docker.internal resolves
+      # to the Docker host (the user's Mac) from inside the container.
+      PARSLI_MODEL__PROVIDER: ${PARSLI_MODEL__PROVIDER:-lmstudio}
+      PARSLI_MODEL__ENDPOINT_URL: ${PARSLI_MODEL__ENDPOINT_URL:-http://host.docker.internal:1234}
+      PARSLI_MODEL__MODEL_NAME: ${PARSLI_MODEL__MODEL_NAME:-google/gemma-4-e4b}
+      PARSLI_MODEL__TIMEOUT_SECONDS: ${PARSLI_MODEL__TIMEOUT_SECONDS:-120}
+
+      # How many days of email to look back on the first sync of each account.
+      PARSLI_GMAIL__LOOKBACK_DAYS: ${PARSLI_GMAIL__LOOKBACK_DAYS:-60}
+    volumes:
+      # Bind-mount the host's backend/.parsli directory so credentials.json,
+      # tokens/*.json, and parsli.db are visible to the user without docker
+      # plumbing. Override with PARSLI_DATA_DIR=/abs/path to point elsewhere.
+      - ${PARSLI_DATA_DIR:-./backend/.parsli}:/data
+    extra_hosts:
+      # Docker Desktop adds host.docker.internal automatically; this line is
+      # explicit so Linux hosts also work without surprise.
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/status', timeout=3)"]
+      interval: 10s
+      timeout: 4s
+      retries: 6
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: parsli-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_started

@@ -1,12 +1,9 @@
 """FastAPI application factory for Parsli."""
 
-import json
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
 
 from ..config import AppConfig
 from ..db.session import ensure_schema, make_engine, make_session_factory
@@ -57,15 +54,6 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(make_sync_router(config, oauth, session_factory), prefix="/api")
     app.include_router(make_settings_router(session_factory), prefix="/api")
     app.include_router(make_dev_router(session_factory), prefix="/api")
-
-    frontend_dir = Path(__file__).parents[4] / "frontend"
-
-    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-    async def serve_frontend() -> str:
-        html_path = frontend_dir / "index.html"
-        if html_path.exists():
-            return html_path.read_text()
-        return "<h1>Parsli</h1><p>Frontend not found.</p>"
 
     return app
 

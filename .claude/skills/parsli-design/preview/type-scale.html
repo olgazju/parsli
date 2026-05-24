@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Type scale</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .row { display: grid; grid-template-columns: 60px 1fr 100px; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #ddd8cf; }
+  .row:last-child { border-bottom: none; }
+  .px { font-family: var(--font-mono); font-size: 11px; color: #7a8a7e; }
+  .sm { font-family: var(--font-mono); font-size: 10px; color: #7a8a7e; text-align: right; }
+</style>
+<div style="background:#f5f0e8;border-radius:12px;padding:14px 18px;border:1px solid #ddd8cf;">
+  <div class="row"><div class="px">24px</div><div style="font-size:24px;font-weight:800;letter-spacing:-.3px;color:#3d4a3a">Page heading</div><div class="sm">800 / tight</div></div>
+  <div class="row"><div class="px">18px</div><div style="font-size:18px;font-weight:700;color:#3d4a3a">Section heading</div><div class="sm">700 / snug</div></div>
+  <div class="row"><div class="px">15px</div><div style="font-size:15px;font-weight:700;color:#3d4a3a">Card title</div><div class="sm">700 / snug</div></div>
+  <div class="row"><div class="px">14px</div><div style="font-size:14px;font-weight:400;color:#3d4a3a">Body text — the workhorse</div><div class="sm">400 / normal</div></div>
+  <div class="row"><div class="px">12px</div><div style="font-size:12px;font-weight:400;color:#7a8a7e">Meta · labels · 14h ago</div><div class="sm">400 / muted</div></div>
+  <div class="row"><div class="px">11px</div><div style="font-size:11px;font-weight:700;color:#7a8a7e;letter-spacing:2.5px;text-transform:uppercase">SMALL CAPS</div><div class="sm">700 / 2.5 tr</div></div>
+  <div class="row"><div class="px">10px</div><div style="font-size:10px;font-weight:700;color:#7a8a7e;letter-spacing:1px;text-transform:uppercase">STAT LABEL</div><div class="sm">700 / 1 tr</div></div>
+</div>
+
+</div></body></html>

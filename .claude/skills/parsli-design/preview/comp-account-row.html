@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Account row</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #f5f0e8; border: 1px solid #ddd8cf; border-radius: 12px; margin-bottom: 8px; }
+  .av { width: 40px; height: 40px; border-radius: 10px; background: #ddd8cf; color: #7a8a7e; font-size: 16px; font-weight: 800; display:flex;align-items:center;justify-content:center; text-transform: uppercase;}
+  .info { flex: 1; min-width: 0; }
+  .em { font-size: 13.5px; font-weight: 700; color: #3d4a3a; }
+  .meta { font-size: 11px; color: #7a8a7e; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+  .sync { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+  .sync.complete { background:#dce8dc; color:#3d5a3f; }
+  .sync.syncing { background:#daeef7; color:#3a6a82; }
+  .sync.pending { background:#e8e4dd; color:#5a6358; }
+  .actions { display: flex; gap: 6px; }
+  .btn { font-family: var(--font-sans); padding: 7px 13px; border-radius: 8px; font: 600 12.5px var(--font-sans); border: none; cursor: pointer; }
+  .btn.s { background: #f5f0e8; color: #3d4a3a; border: 1.5px solid #c8bfb2; }
+  .btn.d { background: #f5dcd7; color: #7a2e22; border: 1.5px solid rgba(181,75,58,.2); }
+</style>
+<div class="row">
+  <div class="av">O</div>
+  <div class="info">
+    <div class="em">olga@example.com</div>
+    <div class="meta"><span class="sync complete">Initial sync done</span><span>· Last: 14m ago</span></div>
+  </div>
+  <div class="actions">
+    <button class="btn s">↻ Sync</button>
+    <button class="btn d">Remove</button>
+  </div>
+</div>
+<div class="row">
+  <div class="av">J</div>
+  <div class="info">
+    <div class="em">jordan@gmail.com</div>
+    <div class="meta"><span class="sync syncing">Syncing…</span></div>
+  </div>
+  <div class="actions">
+    <button class="btn s" style="opacity:.4">Syncing</button>
+    <button class="btn d">Remove</button>
+  </div>
+</div>
+
+</div></body></html>

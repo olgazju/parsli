@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Search & filter pills</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .bar { display: flex; gap: 10px; align-items: center; }
+  .search { position: relative; flex: 1; }
+  .ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #7a8a7e; }
+  .input { width: 100%; padding: 9px 12px 9px 36px; background: #f5f0e8; border: 1px solid #ddd8cf; border-radius: 10px; font: 13.5px var(--font-sans); color: #3d4a3a; outline: none; }
+  .pills { display: flex; gap: 6px; }
+  .pill { padding: 7px 14px; border-radius: 20px; font: 600 12px var(--font-sans); border: 1.5px solid #ddd8cf; background: #f5f0e8; color: #7a8a7e; cursor: pointer; }
+  .pill.active { background: #3d4a3a; border-color: #3d4a3a; color: #f5f0e8; }
+</style>
+<div class="bar">
+  <div class="search">
+    <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="input" type="text" placeholder="Search merchant, carrier, tracking…" />
+  </div>
+  <div class="pills">
+    <button class="pill active">All</button>
+    <button class="pill">Active</button>
+    <button class="pill">Needs action</button>
+    <button class="pill">Delivered</button>
+  </div>
+</div>
+
+</div></body></html>

@@ -216,7 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-/.parsli
+.parsli/
 parcelito-mvp-prompt.md
 decisions.md
 .DS_Store

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Status badges</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge { font-family: var(--font-sans); display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: .3px; }
+  .lbl { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #7a8a7e; margin-bottom: 6px; }
+</style>
+<div style="background:#f5f0e8;border-radius:12px;padding:14px 18px;border:1px solid #ddd8cf;">
+  <div class="lbl">Shipment status</div>
+  <div class="row">
+    <span class="badge" style="background:#daeef7;color:#3a6a82">in transit</span>
+    <span class="badge" style="background:#daeef7;color:#3a6a82">customs released</span>
+    <span class="badge" style="background:#fdf3d7;color:#8a6a1e">out for delivery</span>
+    <span class="badge" style="background:#fdf3d7;color:#8a6a1e">ready for pickup</span>
+    <span class="badge" style="background:#dce8dc;color:#3d5a3f">delivered</span>
+    <span class="badge" style="background:#f5dcd7;color:#7a2e22">action required</span>
+    <span class="badge" style="background:#f5dcd7;color:#7a2e22">payment required</span>
+    <span class="badge" style="background:#e8e4dd;color:#5a6358">unknown</span>
+    <span class="badge" style="background:#e8e4dd;color:#5a6358">order confirmed</span>
+  </div>
+</div>
+
+</div></body></html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shadows & elevation</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .tile { background: #f5f0e8; border-radius: 12px; padding: 18px 14px; min-height: 96px; display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: center; }
+  .nm { font-size: 11px; font-weight: 700; color: #3d4a3a; }
+  .det { font-family: var(--font-mono); font-size: 9.5px; color: #7a8a7e; text-align: center; }
+</style>
+<div class="grid">
+  <div class="tile" style="border:1px solid #ddd8cf">
+    <div class="nm">Resting</div>
+    <div class="det">no shadow — color alone</div>
+  </div>
+  <div class="tile" style="box-shadow: 0 2px 12px rgba(61,74,58,.08); border:1px solid #ddd8cf">
+    <div class="nm">Card hover</div>
+    <div class="det">0 2px 12px rgba(61,74,58,.08)</div>
+  </div>
+  <div class="tile" style="box-shadow: 0 4px 20px rgba(0,0,0,.18); background:#3d4a3a; color:#f5f0e8;">
+    <div class="nm" style="color:#f5f0e8">Toast / floating</div>
+    <div class="det" style="color:#a8b8a6">0 4px 20px rgba(0,0,0,.18)</div>
+  </div>
+</div>
+
+</div></body></html>

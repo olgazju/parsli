@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Badge tint pairs</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pair { background: #f5f0e8; border-radius: 10px; padding: 12px; border: 1px solid #ddd8cf; display: flex; flex-direction: column; gap: 8px; }
+  .pill { align-self: flex-start; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .3px; }
+  .meta { font-family: var(--font-mono); font-size: 10px; color: #7a8a7e; line-height: 1.4; }
+  .name { font-size: 11px; font-weight: 700; color: #3d4a3a; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+<div class="grid">
+  <div class="pair"><div class="name">Blue</div><div class="pill" style="background:#daeef7;color:#3a6a82">in transit</div><div class="meta">bg #daeef7<br>fg #3a6a82</div></div>
+  <div class="pair"><div class="name">Green</div><div class="pill" style="background:#dce8dc;color:#3d5a3f">delivered</div><div class="meta">bg #dce8dc<br>fg #3d5a3f</div></div>
+  <div class="pair"><div class="name">Yellow</div><div class="pill" style="background:#fdf3d7;color:#8a6a1e">arriving today</div><div class="meta">bg #fdf3d7<br>fg #8a6a1e</div></div>
+  <div class="pair"><div class="name">Red</div><div class="pill" style="background:#f5dcd7;color:#7a2e22">action required</div><div class="meta">bg #f5dcd7<br>fg #7a2e22</div></div>
+  <div class="pair"><div class="name">Gray</div><div class="pill" style="background:#e8e4dd;color:#5a6358">unknown</div><div class="meta">bg #e8e4dd<br>fg #5a6358</div></div>
+  <div class="pair"><div class="name">Tan</div><div class="pill" style="background:#ebdcc8;color:#6e4a26">customs</div><div class="meta">bg #ebdcc8<br>fg #6e4a26</div></div>
+</div>
+
+</div></body></html>

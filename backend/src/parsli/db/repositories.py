@@ -178,42 +178,43 @@ class EmailExtractionRepository:
         self._s = session
 
     def upsert(self, record: EmailExtraction) -> None:
-        stmt = (
-            sqlite_insert(EmailExtraction)
-            .values(
-                email_id=record.email_id,
-                processing_version=record.processing_version,
-                email_type=record.email_type,
-                status=record.status,
-                rule_status=record.rule_status,
-                model_status=record.model_status,
-                status_confidence=record.status_confidence,
-                status_evidence=record.status_evidence,
-                merchant=record.merchant,
-                carrier=record.carrier,
-                selected_tracking_number=record.selected_tracking_number,
-                tracking_candidates_json=record.tracking_candidates_json,
-                selected_order_number=record.selected_order_number,
-                order_candidates_json=record.order_candidates_json,
-                pickup_code=record.pickup_code,
-                amount=record.amount,
-                currency=record.currency,
-                decision_source=record.decision_source,
-                conflict_reason=record.conflict_reason,
-                model_provider=record.model_provider,
-                model_name=record.model_name,
-                model_mode=record.model_mode,
-                model_latency_ms=record.model_latency_ms,
-                prompt_tokens=record.prompt_tokens,
-                completion_tokens=record.completion_tokens,
-                rule_model_agreed=record.rule_model_agreed,
-                confidence_delta=record.confidence_delta,
-                needs_review=record.needs_review,
-                prompt_version=record.prompt_version,
-                rules_version=record.rules_version,
-                extraction_error=record.extraction_error,
-            )
-            .on_conflict_do_replace()
+        values = {
+            "email_id": record.email_id,
+            "processing_version": record.processing_version,
+            "email_type": record.email_type,
+            "status": record.status,
+            "rule_status": record.rule_status,
+            "model_status": record.model_status,
+            "status_confidence": record.status_confidence,
+            "status_evidence": record.status_evidence,
+            "merchant": record.merchant,
+            "carrier": record.carrier,
+            "selected_tracking_number": record.selected_tracking_number,
+            "tracking_candidates_json": record.tracking_candidates_json,
+            "selected_order_number": record.selected_order_number,
+            "order_candidates_json": record.order_candidates_json,
+            "pickup_code": record.pickup_code,
+            "amount": record.amount,
+            "currency": record.currency,
+            "decision_source": record.decision_source,
+            "conflict_reason": record.conflict_reason,
+            "model_provider": record.model_provider,
+            "model_name": record.model_name,
+            "model_mode": record.model_mode,
+            "model_latency_ms": record.model_latency_ms,
+            "prompt_tokens": record.prompt_tokens,
+            "completion_tokens": record.completion_tokens,
+            "rule_model_agreed": record.rule_model_agreed,
+            "confidence_delta": record.confidence_delta,
+            "needs_review": record.needs_review,
+            "prompt_version": record.prompt_version,
+            "rules_version": record.rules_version,
+            "extraction_error": record.extraction_error,
+        }
+        stmt = sqlite_insert(EmailExtraction).values(**values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["email_id", "processing_version"],
+            set_={k: v for k, v in values.items() if k not in ("email_id", "processing_version")},
         )
         self._s.execute(stmt)
 

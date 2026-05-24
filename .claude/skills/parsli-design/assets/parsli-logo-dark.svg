@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 56" width="220" height="56">
+  
+  <rect width="220" height="56" fill="#3d4a3a"></rect>
+  
+  <text class="word light" x="6" y="36">pars</text>
+  <text class="word sky" x="98" y="36">l</text>
+  <text class="word sky" x="114" y="36">i</text>
+  <g transform="translate(116.5, 8)">
+    <rect x="0" y="0" width="8" height="7" rx="1.2" fill="#e8b44c"></rect>
+    <line x1="4" y1="0" x2="4" y2="7" stroke="#3d4a3a" stroke-width="0.8"></line>
+    <line x1="0" y1="3.2" x2="8" y2="3.2" stroke="#3d4a3a" stroke-width="0.8"></line>
+  </g>
+  <text class="tag" x="7" y="52">LOCAL PARCEL INTELLIGENCE</text>
+</svg>

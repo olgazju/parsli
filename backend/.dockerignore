@@ -1,0 +1,15 @@
+.parsli/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+notebooks/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.local

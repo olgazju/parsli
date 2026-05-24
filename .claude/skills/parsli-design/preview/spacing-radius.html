@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Corner radius</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .tile { background: #f5f0e8; border: 1px solid #ddd8cf; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .shape { width: 72px; height: 56px; background: #8aab8c; }
+  .nm { font-size: 11px; font-weight: 700; color: #3d4a3a; }
+  .px { font-family: var(--font-mono); font-size: 10px; color: #7a8a7e; }
+</style>
+<div class="grid">
+  <div class="tile" style="border-radius:4px"><div class="shape" style="border-radius:4px"></div><div class="nm">r-sm</div><div class="px">4px</div></div>
+  <div class="tile" style="border-radius:6px"><div class="shape" style="border-radius:6px"></div><div class="nm">r-chip</div><div class="px">6px</div></div>
+  <div class="tile" style="border-radius:10px"><div class="shape" style="border-radius:10px"></div><div class="nm">r-btn / input</div><div class="px">10px</div></div>
+  <div class="tile" style="border-radius:12px"><div class="shape" style="border-radius:12px"></div><div class="nm">r-card</div><div class="px">12px</div></div>
+  <div class="tile" style="border-radius:20px"><div class="shape" style="border-radius:28px;height:36px;width:90px"></div><div class="nm">r-pill</div><div class="px">20px</div></div>
+</div>
+
+</div></body></html>

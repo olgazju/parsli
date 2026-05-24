@@ -15,6 +15,7 @@ import httpx
 from pydantic import BaseModel
 
 from ..config import ModelConfig
+from .base import ModelUnavailableError
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -48,8 +49,16 @@ class LMStudioClient:
             "temperature": 0.1,
             "stream": False,
         }
-        resp = self._client.post(self._url, json=payload)
-        resp.raise_for_status()
+        try:
+            resp = self._client.post(self._url, json=payload)
+        except httpx.ConnectError as exc:
+            raise ModelUnavailableError(
+                f"Could not reach LM Studio at {self._url}: {exc}"
+            ) from exc
+        if resp.status_code >= 400:
+            raise ModelUnavailableError(
+                _format_http_error(self._url, self._model, resp)
+            )
         body = resp.json()
         self.last_usage = body.get("usage")
         raw = body["choices"][0]["message"]["content"]
@@ -65,3 +74,27 @@ class LMStudioClient:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+
+
+def _format_http_error(url: str, model: str, resp: httpx.Response) -> str:
+    """Turn an LM Studio HTTP error into a user-actionable message."""
+    detail = resp.text.strip()
+    try:
+        body = resp.json()
+        if isinstance(body, dict):
+            err = body.get("error")
+            if isinstance(err, dict) and isinstance(err.get("message"), str):
+                detail = err["message"]
+            elif isinstance(err, str):
+                detail = err
+    except Exception:
+        pass
+    if resp.status_code == 400 and "model" in detail.lower():
+        return (
+            f"LM Studio rejected the request — model {model!r} is not "
+            f"loaded or misconfigured. Open LM Studio and load it, then "
+            f"retry. ({detail})"
+        )
+    return (
+        f"LM Studio returned HTTP {resp.status_code} from {url}: {detail or 'no detail'}"
+    )

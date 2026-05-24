@@ -14,6 +14,7 @@ import httpx
 from pydantic import BaseModel
 
 from ..config import ModelConfig
+from .base import ModelUnavailableError
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -47,8 +48,17 @@ class LlamaCppClient:
             "temperature": 0.1,
             "stream": False,
         }
-        resp = self._client.post(self._url, json=payload)
-        resp.raise_for_status()
+        try:
+            resp = self._client.post(self._url, json=payload)
+        except httpx.ConnectError as exc:
+            raise ModelUnavailableError(
+                f"Could not reach llama-cpp server at {self._url}: {exc}"
+            ) from exc
+        if resp.status_code >= 400:
+            detail = resp.text.strip() or "no detail"
+            raise ModelUnavailableError(
+                f"llama-cpp server returned HTTP {resp.status_code}: {detail}"
+            )
         body = resp.json()
         self.last_usage = body.get("usage")
         raw = body["choices"][0]["message"]["content"]

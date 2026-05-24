@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Semantic state</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .row2 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .cell { background: #f5f0e8; border-radius: 10px; padding: 10px; border: 1px solid #ddd8cf; display: flex; flex-direction: column; gap: 8px; }
+  .dot  { width: 12px; height: 12px; border-radius: 50%; }
+  .role { font-size: 11px; font-weight: 700; color: #3d4a3a; line-height: 1.2; }
+  .lab  { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #7a8a7e; }
+  .hex  { font-family: var(--font-mono); font-size: 10px; color: #7a8a7e; }
+</style>
+<div class="row2">
+  <div class="cell"><div class="lab">Shipped</div><div class="dot" style="background:#87ceeb"></div><div class="role">In transit / active</div><div class="hex">#87ceeb</div></div>
+  <div class="cell"><div class="lab">Arriving</div><div class="dot" style="background:#e8b44c"></div><div class="role">Arriving today</div><div class="hex">#e8b44c</div></div>
+  <div class="cell"><div class="lab">Delivered</div><div class="dot" style="background:#6b8f6e"></div><div class="role">Success / done</div><div class="hex">#6b8f6e</div></div>
+  <div class="cell"><div class="lab">Delayed</div><div class="dot" style="background:#b54b3a"></div><div class="role">Error / action</div><div class="hex">#b54b3a</div></div>
+  <div class="cell"><div class="lab">Pending</div><div class="dot" style="background:#7a8a7e"></div><div class="role">Unknown / muted</div><div class="hex">#7a8a7e</div></div>
+  <div class="cell"><div class="lab">Order</div><div class="dot" style="background:#d5cec2"></div><div class="role">Confirmed only</div><div class="hex">#d5cec2</div></div>
+</div>
+
+</div></body></html>

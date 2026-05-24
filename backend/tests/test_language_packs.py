@@ -98,7 +98,7 @@ def test_hebrew_footer_stripped_when_he_pack_active():
     cleaner = EmailCleaner(load_language_packs(["en", "he"]))
     body = (
         "Your package is on its way.\n"
-        "הודעה זו נשלחה ל- olgazjuzju@gmail.com על ידי example.com\n"
+        "הודעה זו נשלחה ל- user@example.com על ידי example.com\n"
         "נשלח באמצעות מסר עשר"
     )
     result = cleaner.clean("x", body)
@@ -108,7 +108,7 @@ def test_hebrew_footer_stripped_when_he_pack_active():
 
 def test_hebrew_footer_not_stripped_when_en_only():
     cleaner = EmailCleaner(load_language_packs(["en"]))
-    body = "הודעה זו נשלחה ל- olgazjuzju@gmail.com על ידי example.com"
+    body = "הודעה זו נשלחה ל- user@example.com על ידי example.com"
     result = cleaner.clean("x", body)
     assert "הודעה זו נשלחה ל-" in result.cleaned_text
 

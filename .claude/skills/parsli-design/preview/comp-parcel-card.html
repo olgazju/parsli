@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parcel card</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .card { background: #f5f0e8; border-radius: 12px; border-left: 4px solid #87ceeb; padding: 14px 16px 12px; border-top: 1px solid #ddd8cf; border-right: 1px solid #ddd8cf; border-bottom: 1px solid #ddd8cf;}
+  .r1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 5px; }
+  .title { font-size: 14.5px; font-weight: 700; color: #3d4a3a; }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 20px; background:#daeef7; color:#3a6a82; letter-spacing: .3px;}
+  .r2 { display: flex; justify-content: space-between; font-size: 11.5px; color: #7a8a7e; margin-bottom: 8px; }
+  .mono { font-family: var(--font-mono); font-size: 11px; }
+  .tracker { display: flex; align-items: center; gap: 0; margin-bottom: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; z-index: 1; }
+  .dot.past { background: #6b8f6e; }
+  .dot.cur { background: #87ceeb; border: 2px solid #6b8f6e; box-shadow: 0 0 0 3px rgba(135,206,235,.25); }
+  .dot.fut { background: #d5cec2; }
+  .line { flex: 1; height: 3px; border-radius: 2px; }
+  .line.past { background: #6b8f6e; }
+  .line.fut { background: #d5cec2; }
+  .labels { display: flex; justify-content: space-between; }
+  .labels span { font-size: 9.5px; color: #7a8a7e; font-weight: 700; letter-spacing: .3px; flex: 1; text-align: center; }
+  .labels span:first-child { text-align: left; }
+  .labels span:last-child { text-align: right; }
+</style>
+<div class="card">
+  <div class="r1">
+    <span class="title">Cotton crew socks (5-pack)</span>
+    <span class="badge">in transit</span>
+  </div>
+  <div class="r2">
+    <span>Uniqlo · <span class="mono">LX894521209HK</span> · 4 events</span>
+    <span>2h ago</span>
+  </div>
+  <div class="tracker">
+    <div class="dot past"></div>
+    <div class="line past"></div>
+    <div class="dot past"></div>
+    <div class="line past"></div>
+    <div class="dot cur"></div>
+    <div class="line fut"></div>
+    <div class="dot fut"></div>
+  </div>
+  <div class="labels"><span>Ordered</span><span>Shipped</span><span>Arriving</span><span>Delivered</span></div>
+</div>
+
+</div></body></html>

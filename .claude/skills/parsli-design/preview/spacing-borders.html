@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Borders & strokes</title>
+<link rel="stylesheet" href="card.css">
+
+</head>
+<body><div class="preview-root">
+
+<style>
+  .col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { background: #f5f0e8; padding: 14px; border-radius: 12px; }
+  .lbl { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #7a8a7e; margin-bottom: 8px; }
+  .demo { font-size: 12px; color: #3d4a3a; }
+</style>
+<div class="col">
+  <div class="tile" style="border: 1px solid #ddd8cf"><div class="lbl">Hairline · 1px #ddd8cf</div><div class="demo">Default rule between rows, inputs, table cells.</div></div>
+  <div class="tile" style="border: 1px solid #c8bfb2"><div class="lbl">Card · 1px #c8bfb2</div><div class="demo">A touch more contrast for panels on the page bg.</div></div>
+  <div class="tile" style="border-left: 4px solid #87ceeb; border-top:1px solid #ddd8cf; border-right:1px solid #ddd8cf; border-bottom:1px solid #ddd8cf"><div class="lbl">Status strip · 4px left</div><div class="demo">Parcel cards encode current status in the left edge.</div></div>
+  <div class="tile" style="border-bottom: 3px solid #6b8f6e; border-top:1px solid #ddd8cf; border-left:1px solid #ddd8cf; border-right:1px solid #ddd8cf"><div class="lbl">Meter strip · 3px bottom</div><div class="demo">Stat cards encode category in the bottom edge.</div></div>
+</div>
+
+</div></body></html>

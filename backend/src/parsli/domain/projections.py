@@ -16,6 +16,11 @@ class ShipmentEventProjection(BaseModel):
     tracking_number: str | None
     order_number: str | None
     email_id: str
+    # Source attribution — where this event came from.
+    carrier: str | None = None
+    sender_display_name: str | None = None
+    sender_domain: str | None = None
+    source_label: str | None = None
     # From email_extractions — None when the extraction record is absent.
     decision_source: str | None
     needs_review: bool

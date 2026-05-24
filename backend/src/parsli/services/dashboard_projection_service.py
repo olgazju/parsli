@@ -50,6 +50,44 @@ def _shipment_kind(shipment: ShipmentDTO) -> str:
     return "tracked" if shipment.primary_tracking_number else "order_only"
 
 
+# Carriers are stored as machine-friendly slugs (lowercase, underscored) on
+# email_extractions.carrier. Convert to a display name for the timeline.
+_CARRIER_DISPLAY: dict[str, str] = {
+    "ups": "UPS",
+    "fedex": "FedEx",
+    "dhl": "DHL",
+    "usps": "USPS",
+    "israel_post": "Israel Post",
+    "hfd": "HFD",
+    "asos": "ASOS",
+    "amazon": "Amazon",
+}
+
+
+def _format_carrier(carrier: str) -> str:
+    return _CARRIER_DISPLAY.get(carrier.lower(), carrier.replace("_", " ").title())
+
+
+def _resolve_event_source_label(
+    carrier: str | None,
+    sender_display_name: str | None,
+    sender_domain: str | None,
+) -> str | None:
+    """Best-of available signals for "this event came from X".
+
+    Prefers the carrier (it's the classified entity), then the sender's
+    display name from the email header, then the bare domain. Returns None
+    when nothing useful is available.
+    """
+    if carrier:
+        return _format_carrier(carrier)
+    if sender_display_name:
+        return sender_display_name
+    if sender_domain:
+        return sender_domain
+    return None
+
+
 def _resolve_display_merchant(
     merchant: str | None,
     sender_display_name: str | None,
@@ -212,6 +250,12 @@ class DashboardProjectionService:
 
     def _to_event_projection(self, event: ShipmentEventDTO) -> ShipmentEventProjection:
         extraction = self._extraction_repo.get(event.email_id, event.processing_version)
+        carrier = extraction.carrier if extraction else None
+        source_label = _resolve_event_source_label(
+            carrier=carrier,
+            sender_display_name=event.sender_display_name,
+            sender_domain=event.sender_domain,
+        )
         return ShipmentEventProjection(
             event_date=event.event_date,
             status=event.status,
@@ -221,6 +265,10 @@ class DashboardProjectionService:
             tracking_number=event.tracking_number,
             order_number=event.order_number,
             email_id=event.email_id,
+            carrier=carrier,
+            sender_display_name=event.sender_display_name,
+            sender_domain=event.sender_domain,
+            source_label=source_label,
             decision_source=extraction.decision_source if extraction else None,
             needs_review=bool(extraction.needs_review) if extraction else False,
             model_mode=extraction.model_mode if extraction else None,
@@ -240,16 +288,18 @@ class DashboardProjectionService:
     def _load_sender_info(
         self, canonical_ids: list[str]
     ) -> dict[str, tuple[str | None, str | None]]:
-        """Return (sender_display_name, sender_domain) from the oldest event per shipment.
+        """Return (sender_display_name, sender_domain) for each shipment.
 
-        Uses the first (chronologically earliest) event so the original sender
-        is preferred over any subsequent forwarded or re-sent emails.
+        Prefers the sender from the earliest ``order_confirmed`` event so the
+        original store wins over the carrier. Falls back to the chronologically
+        earliest event of any status when no order-confirmation event exists.
         """
         if not canonical_ids:
             return {}
         rows = self._session.execute(
             select(
                 ShipmentEvent.canonical_shipment_id,
+                ShipmentEvent.status,
                 ShipmentEvent.sender_display_name,
                 ShipmentEvent.sender_domain,
             )
@@ -257,9 +307,17 @@ class DashboardProjectionService:
             .order_by(ShipmentEvent.event_date)
         ).all()
 
+        # Track the earliest event per shipment, but upgrade once we find an
+        # order_confirmed row regardless of order.
         result: dict[str, tuple[str | None, str | None]] = {}
+        order_found: set[str] = set()
         for row in rows:
             cid = row.canonical_shipment_id
-            if cid not in result:
+            is_order = row.status == "order_confirmed"
+            if cid in order_found:
+                continue
+            if cid not in result or is_order:
                 result[cid] = (row.sender_display_name, row.sender_domain)
+            if is_order:
+                order_found.add(cid)
         return result

@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.idea
+.DS_Store
+.claude
+node_modules
+dist
+__pycache__
+*.pyc
+.parsli
+.parsli-data
+.env
+.env.local
