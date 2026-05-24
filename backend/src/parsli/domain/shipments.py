@@ -27,6 +27,7 @@ class ShipmentDTO(BaseModel):
     chronology_ok: bool
     chronology_severity: str  # "ok" | "warning" | "conflict"
     chronology_notes: list[str]
+    chronology_reason_code: str | None = None
     event_count: int
     first_seen_at: datetime
     last_seen_at: datetime

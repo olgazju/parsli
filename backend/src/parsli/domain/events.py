@@ -14,6 +14,7 @@ class ShipmentEventDTO(BaseModel):
     status_confidence: float
     status_evidence: str
     sender_domain: str | None
+    sender_display_name: str | None = None
     tracking_number: str | None
     order_number: str | None
     merchant: str | None

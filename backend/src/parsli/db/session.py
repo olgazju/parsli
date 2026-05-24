@@ -35,6 +35,9 @@ _NEW_COLUMNS: list[tuple[str, str, str]] = [
     ("email_extractions", "rule_model_agreed", "BOOLEAN"),
     ("email_extractions", "confidence_delta", "REAL"),
     ("email_extractions", "needs_review", "BOOLEAN"),
+    ("shipments", "chronology_reason_code", "VARCHAR(64)"),
+    ("shipment_events", "sender_display_name", "VARCHAR(255)"),
+    ("email_messages", "sender_display_name", "VARCHAR(255)"),
 ]
 
 

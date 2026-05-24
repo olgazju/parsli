@@ -136,6 +136,11 @@ src/parsli/
     email_processing_service.py  process_new_emails() / reprocess_email()
     shipment_resolution_service.py  resolve_and_insert(), rebuild_all()
     dashboard_service.py get_dashboard() → DashboardDTO
+    dashboard_projection_service.py  DashboardProjectionService
+                         get_dashboard_projection() → DashboardProjection
+                         get_shipment_detail(canonical_id) → ShipmentDetailProjection | None
+                         Read-only — never writes. Builds UI-ready projections
+                         from pre-resolved shipments, events, and extractions.
     domain_preference_service.py  add/remove allowlist and blocklist domains
     candidate_observability_service.py
                          persist_fetch_result(session, result) — resolves run indices to
@@ -144,7 +149,9 @@ src/parsli/
                          emails_exclusive_to_query(), emails_matching_multiple_queries()
   api/
     main.py              create_app(config) factory
-    routes_dashboard.py  GET /api/dashboard, /api/shipments, /api/shipments/{id}
+    routes_dashboard.py  GET /api/dashboard, /api/dashboard/projection,
+                         /api/shipments, /api/shipments/{id},
+                         /api/shipments/{id}/detail
     routes_sync.py       POST /api/sync/initial|incremental, GET /api/status
     routes_settings.py   GET/POST/DELETE /api/settings/domains/allowlist|blocklist
   cli.py                 parsli serve | sync | rebuild
@@ -228,7 +235,11 @@ Also checked by `RuleEngine` at classification time (belt-and-suspenders).
 
 **Billing exclusion** — `billing_exclusion_phrases` in language packs (`he.yaml`: `פירוט חיובים`, `חיובים תקופתיים`; `en.yaml`: `invoice`, `billing statement`, …) feed `_INVOICE_RE` in `RuleEngine`. The same Hebrew phrases appear in `he.yaml: query_exclude_terms` so periodic-billing emails are not downloaded at all.
 
-**Tracking extraction context guard** — FedEx (15-digit) and DHL (10–11 digit) patterns in `domain/identifiers.py` require a shipping keyword within 150 chars. Context words come from `MergedLanguageConfig.tracking_context_words` (built by `IdentifierExtractor`). Pure-digit matches without context (phone numbers, billing IDs) are silently dropped. Format-specific carriers (UPS, Israel Post, HFD, ASOS) are extracted globally — no context guard. `TrackingIdentifier.source` carries `"body"` or `"body_near_keyword"`.
+**Tracking extraction context guard** — FedEx (15-digit) and DHL (10–11 digit) patterns in `domain/identifiers.py` require a shipping keyword within 150 chars. Context words come from `MergedLanguageConfig.tracking_context_words` (built by `IdentifierExtractor`). Pure-digit matches without context (phone numbers, billing IDs) are silently dropped. Format-specific carriers (UPS, Israel Post, HFD, ASOS) are extracted globally — no context guard. `TrackingIdentifier.source` carries `"subject"` (found in subject line), `"body_near_keyword"` (adjacent to a shipping keyword), or `"body"` (format match only). `RuleEngine` tags subject-found identifiers after extraction; `select_best_tracking` uses source as a secondary scoring dimension.
+
+**Identifier selection** — `select_best_tracking` in `domain/identifiers.py` uses candidate-level scoring: structured carriers (non-numeric prefix: UPS, Israel Post, HFD, ASOS) beat generic numeric ones (FedEx, DHL); within the same structure tier, subject > body_near_keyword > body. No carrier-brand ranking. `ShipmentResolutionService._rebuild_shipment` applies the same principle via `_STRUCTURED_FAMILIES` when sorting tracking numbers for the `primary_tracking_number` display field.
+
+**Resolution paths** — `ShipmentResolutionService.resolve_and_insert` splits on `email_type`: `order_confirmation` → creates order alias + `order_confirmed` event only (no tracking required); shipping types → looks up tracking alias, falls back to order+merchant alias, derives new canonical. Never skips dedup: events inserted via `ShipmentEventRepository.insert_if_new`.
 
 **SQLite NULL uniqueness** — `ShipmentEventRepository.insert_if_new` uses explicit SELECT (SQLite treats NULL≠NULL in unique constraints).
 
@@ -241,12 +252,12 @@ Also checked by `RuleEngine` at classification time (belt-and-suspenders).
 ## Tests
 
 ```bash
-python -m pytest tests/ -v   # 91 tests, all must pass
+python -m pytest tests/ -v   # 215 tests, all must pass
 ```
 
 ## Notebook playground
 
-`notebooks/backend_playground.ipynb` — 4-part flow using backend imports.
+`notebooks/backend_playground.ipynb` — 5-part flow using backend imports.
 
 **Cell execution order matters:**
 1. Setup cell + DB setup cell — must run first (creates `config`, `session_factory`)
@@ -254,3 +265,5 @@ python -m pytest tests/ -v   # 91 tests, all must pass
 3. Part 2: preprocessing (can reload from `data/emails.json` without re-downloading)
 4. Part 3: model classification
 5. Part 4: persistence + dashboard (reuses `session_factory` from step 1)
+6. Part 5: dashboard projection — `DashboardProjectionService.get_dashboard_projection()` summary,
+   `get_shipment_detail(canonical_id)` detail view; use `INSPECT_IDX` variable to pick shipment

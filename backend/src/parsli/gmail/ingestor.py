@@ -11,7 +11,7 @@ from ..db.models import EmailMessage
 from ..db.repositories import EmailMessageRepository
 from ..privacy.debug_store import DebugStore
 from ..privacy.hashing import body_hash, subject_hash
-from ..privacy.sanitizer import extract_sender_domain
+from ..privacy.sanitizer import extract_sender_display_name, extract_sender_domain
 from .client import GmailClient
 from .models import CandidateFetchResult
 from .sender_trust import SenderTrustScorer
@@ -108,6 +108,7 @@ class GmailIngestor:
             internal_date_ms / 1000, tz=timezone.utc
         )
         domain = extract_sender_domain(sender)
+        display_name = extract_sender_display_name(sender)
 
         body_text = self._client.extract_body(raw.get("payload", {}))
         bh = body_hash(body_text) if body_text else None
@@ -120,6 +121,7 @@ class GmailIngestor:
             thread_id=thread_id,
             received_at=received_at,
             sender_domain=domain,
+            sender_display_name=display_name,
             subject_hash=subject_hash(subject) if subject else None,
             subject_debug=subject[:255] if self._store_subject_debug else None,
             body_hash=bh,

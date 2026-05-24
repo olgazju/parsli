@@ -7,7 +7,7 @@ No business logic lives here — only storage operations.
 import json
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
@@ -104,6 +104,7 @@ class EmailMessageRepository:
                 thread_id=msg.thread_id,
                 received_at=msg.received_at,
                 sender_domain=msg.sender_domain,
+                sender_display_name=msg.sender_display_name,
                 subject_hash=msg.subject_hash,
                 subject_debug=msg.subject_debug,
                 body_hash=msg.body_hash,
@@ -114,7 +115,10 @@ class EmailMessageRepository:
             )
             .on_conflict_do_update(
                 index_elements=["email_id"],
-                set_={"last_seen_at": datetime.now(timezone.utc)},
+                set_={
+                    "last_seen_at": datetime.now(timezone.utc),
+                    "sender_display_name": msg.sender_display_name,
+                },
             )
         )
         self._s.execute(stmt)
@@ -287,7 +291,19 @@ class ShipmentEventRepository:
                 else ShipmentEvent.order_number.is_(None)
             ),
         )
-        if self._s.execute(exists_q).scalar_one_or_none() is not None:
+        existing_id = self._s.execute(exists_q).scalar_one_or_none()
+        if existing_id is not None:
+            # Backfill sender info if the existing row has NULLs and we now have values.
+            if event.sender_display_name or event.sender_domain:
+                self._s.execute(
+                    update(ShipmentEvent)
+                    .where(ShipmentEvent.id == existing_id)
+                    .where(ShipmentEvent.sender_display_name.is_(None))
+                    .values(
+                        sender_display_name=event.sender_display_name,
+                        sender_domain=event.sender_domain,
+                    )
+                )
             return False
 
         new_row = ShipmentEvent(
@@ -298,6 +314,7 @@ class ShipmentEventRepository:
             status_confidence=event.status_confidence,
             status_evidence=event.status_evidence,
             sender_domain=event.sender_domain,
+            sender_display_name=event.sender_display_name,
             tracking_number=event.tracking_number,
             order_number=event.order_number,
             merchant=event.merchant,
@@ -345,6 +362,7 @@ class ShipmentRepository:
                 chronology_ok=shipment.chronology_ok,
                 chronology_severity=shipment.chronology_severity,
                 chronology_notes_json=json.dumps(shipment.chronology_notes),
+                chronology_reason_code=shipment.chronology_reason_code,
                 event_count=shipment.event_count,
                 first_seen_at=shipment.first_seen_at,
                 last_seen_at=shipment.last_seen_at,
@@ -364,6 +382,7 @@ class ShipmentRepository:
                     "chronology_ok": shipment.chronology_ok,
                     "chronology_severity": shipment.chronology_severity,
                     "chronology_notes_json": json.dumps(shipment.chronology_notes),
+                    "chronology_reason_code": shipment.chronology_reason_code,
                     "event_count": shipment.event_count,
                     "last_seen_at": shipment.last_seen_at,
                     "updated_at": datetime.now(timezone.utc),
@@ -524,6 +543,7 @@ def _event_row_to_dto(row: ShipmentEvent) -> ShipmentEventDTO:
         status_confidence=row.status_confidence,
         status_evidence=row.status_evidence,
         sender_domain=row.sender_domain,
+        sender_display_name=row.sender_display_name,
         tracking_number=row.tracking_number,
         order_number=row.order_number,
         merchant=row.merchant,
@@ -546,6 +566,7 @@ def _shipment_row_to_dto(row: Shipment) -> ShipmentDTO:
         chronology_ok=row.chronology_ok,
         chronology_severity=row.chronology_severity,
         chronology_notes=json.loads(row.chronology_notes_json or "[]"),
+        chronology_reason_code=row.chronology_reason_code,
         event_count=row.event_count,
         first_seen_at=row.first_seen_at,
         last_seen_at=row.last_seen_at,

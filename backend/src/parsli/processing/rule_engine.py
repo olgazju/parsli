@@ -160,6 +160,17 @@ class RuleEngine:
         _order_values: set[str] = {o.value for o in orders}
         tracking = [t for t in tracking if t.value not in _order_values]
 
+        # Tag identifiers found in the subject line — subject context is
+        # stronger evidence than body-only, so select_best_tracking can prefer it.
+        if subject:
+            _subject_vals = {
+                t.value for t in self._extractor.extract_tracking_candidates(subject)
+            }
+            tracking = [
+                t.model_copy(update={"source": "subject"}) if t.value in _subject_vals else t
+                for t in tracking
+            ]
+
         is_shipping = (bool(status) or bool(tracking)) and not is_invoice
 
         return RuleExtractionResult(

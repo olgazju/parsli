@@ -226,7 +226,12 @@ class SyncService:
                 for extraction in extractions:
                     msg = msg_repo.get(extraction.email_id)
                     received_at = msg.received_at if msg else datetime.now(timezone.utc)
-                    resolution_svc.resolve_and_insert(extraction, received_at)
+                    resolution_svc.resolve_and_insert(
+                        extraction,
+                        received_at,
+                        sender_display_name=msg.sender_display_name if msg else None,
+                        sender_domain=msg.sender_domain if msg else None,
+                    )
 
             session.commit()
         return extractions

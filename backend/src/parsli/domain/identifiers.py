@@ -9,7 +9,7 @@ class TrackingIdentifier(BaseModel):
     value: str
     carrier_hint: str | None = None
     confidence: float = 1.0
-    source: str | None = None  # "body" | "body_near_keyword"
+    source: str | None = None  # "subject" | "body_near_keyword" | "body"
 
 
 class OrderIdentifier(BaseModel):
@@ -45,6 +45,33 @@ _TRACKING_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("fedex", re.compile(r"\b\d{15}\b")),
     # DHL Express (10-11 digits)
     ("dhl", re.compile(r"\b\d{10,11}\b")),
+]
+
+# Carriers whose format has a non-numeric prefix (structurally identifiable).
+# Generic numeric formats (fedex, dhl) share their length with phone numbers
+# and billing IDs — they are weak and lose to any structured candidate.
+_STRUCTURED_CARRIERS: frozenset[str] = frozenset({"ups", "israel_post", "hfd", "asos"})
+
+# Source rank: lower = stronger evidence. "subject" means found in the email
+# subject line; "body_near_keyword" means found adjacent to an explicit shipping
+# keyword; "body" means matched by format alone with no nearby keyword.
+_SOURCE_RANK: dict[str | None, int] = {
+    "subject": 0,
+    "body_near_keyword": 1,
+    "body": 2,
+}
+
+# Patterns for doubled tracking numbers — e.g. ECSA0041206ECSA0041206.
+# A doubled value has no word boundary between the two copies (digit→letter or
+# digit→digit are both \w, so \b never fires mid-string). Normalize at the
+# text level before running the main extraction patterns.
+_DOUBLED_TRACKING_RE: list[re.Pattern[str]] = [
+    re.compile(r"(1Z[A-Z0-9]{16})\1", re.IGNORECASE),
+    re.compile(r"([A-Z]{2}\d{8,10}[A-Z]{1,2})\1"),
+    re.compile(r"(ECSA\d{7,12})\1", re.IGNORECASE),
+    re.compile(r"(ASO\d[A-Z0-9]{10,18})\1", re.IGNORECASE),
+    re.compile(r"(\d{15})\1"),
+    re.compile(r"(\d{10,11})\1"),
 ]
 
 # Words that can never be order numbers.
@@ -100,6 +127,12 @@ class IdentifierExtractor:
         Pure-digit carriers (FedEx/DHL) require a nearby shipping keyword to avoid
         false positives from phone numbers and billing reference IDs.
         """
+        # Collapse doubled tracking strings before pattern matching.
+        # Word-boundary anchors prevent \b(ECSA...)\b from matching ECSA...ECSA...
+        # because digit→letter is still \w on both sides (no boundary mid-string).
+        for doubled_pat in _DOUBLED_TRACKING_RE:
+            text = doubled_pat.sub(r"\1", text)
+
         seen: set[str] = set()
         results: list[TrackingIdentifier] = []
 
@@ -136,6 +169,29 @@ class IdentifierExtractor:
                     results.append(OrderIdentifier(value=val, merchant_hint=merchant))
 
         return results
+
+
+def _candidate_score(t: TrackingIdentifier) -> tuple[int, int]:
+    """Scoring key for select_best_tracking. Lower tuple = stronger candidate.
+
+    Dimension 1 — structure: carriers with a non-numeric prefix (0) beat
+    pure-numeric formats (1). No carrier-brand ranking within a tier.
+    Dimension 2 — source: subject (0) > body_near_keyword (1) > body (2) > unknown (3).
+    """
+    structure = 0 if t.carrier_hint in _STRUCTURED_CARRIERS else 1
+    return (structure, _SOURCE_RANK.get(t.source, 3))
+
+
+def select_best_tracking(candidates: list[TrackingIdentifier]) -> TrackingIdentifier | None:
+    """Return the strongest tracking candidate from a list.
+
+    Structured identifiers (non-numeric prefix) beat generic numeric ones.
+    Within the same structure tier, subject-line matches beat keyword-context
+    matches, which beat bare body matches. No carrier-brand ranking.
+    """
+    if not candidates:
+        return None
+    return min(candidates, key=_candidate_score)
 
 
 # ── Module-level convenience functions ────────────────────────────────────────

@@ -14,10 +14,19 @@ from .statuses import (
 class ChronologyResult(BaseModel):
     severity: str  # "ok" | "warning" | "conflict"
     notes: list[str]
+    reason_codes: list[str] = []  # structured codes for projection layer
 
     @property
     def ok(self) -> bool:
         return self.severity == "ok"
+
+    @property
+    def reason(self) -> str | None:
+        return self.notes[0] if self.notes else None
+
+    @property
+    def reason_code(self) -> str | None:
+        return self.reason_codes[0] if self.reason_codes else None
 
 
 def check_chronology(events: list[ShipmentEventDTO]) -> ChronologyResult:
@@ -28,6 +37,7 @@ def check_chronology(events: list[ShipmentEventDTO]) -> ChronologyResult:
     Only genuine backwards regressions in the main-status ordering are flagged.
     """
     notes: list[str] = []
+    reason_codes: list[str] = []
     severity = "ok"
 
     sorted_events = sorted(events, key=lambda e: e.event_date)
@@ -38,10 +48,18 @@ def check_chronology(events: list[ShipmentEventDTO]) -> ChronologyResult:
 
     for event in main_events:
         if delivered_at is not None:
-            notes.append(
-                f"'{event.status.value}' observed after delivery at "
-                f"{delivered_at.date()} — likely duplicate or stale email"
-            )
+            if event.status in TERMINAL_STATUSES:
+                notes.append(
+                    f"'{event.status.value}' observed after delivery at "
+                    f"{delivered_at.date()} — duplicate terminal status"
+                )
+                reason_codes.append("duplicate_terminal_status")
+            else:
+                notes.append(
+                    f"'{event.status.value}' observed after delivery at "
+                    f"{delivered_at.date()} — likely stale email"
+                )
+                reason_codes.append("terminal_status_followed_by_non_terminal")
             severity = "conflict"
             continue
 
@@ -60,12 +78,13 @@ def check_chronology(events: list[ShipmentEventDTO]) -> ChronologyResult:
                 f"'{event.status.value}' (rank {rank}) followed a higher-rank status "
                 f"— possible out-of-order email or carrier data issue"
             )
+            reason_codes.append("status_date_regression")
             if severity == "ok":
                 severity = "warning"
 
         highest_rank = max(highest_rank, rank)
 
-    return ChronologyResult(severity=severity, notes=notes)
+    return ChronologyResult(severity=severity, notes=notes, reason_codes=reason_codes)
 
 
 def select_current_status(events: list[ShipmentEventDTO]) -> ShipmentEventDTO | None:

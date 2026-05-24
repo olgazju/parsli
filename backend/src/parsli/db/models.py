@@ -65,6 +65,7 @@ class EmailMessage(Base):
     thread_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     sender_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sender_display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     subject_hash: Mapped[str | None] = mapped_column(String(16), nullable=True)
     # subject_debug is only populated when privacy.debug_store_email_artifacts is True
     subject_debug: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -169,6 +170,7 @@ class ShipmentEvent(Base):
     status_confidence: Mapped[float] = mapped_column(Float, default=0.0)
     status_evidence: Mapped[str] = mapped_column(Text, default="")
     sender_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sender_display_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     tracking_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
     order_number: Mapped[str | None] = mapped_column(String(128), nullable=True)
     merchant: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -191,6 +193,7 @@ class Shipment(Base):
     chronology_ok: Mapped[bool] = mapped_column(Boolean, default=True)
     chronology_severity: Mapped[str] = mapped_column(String(16), default="ok")
     chronology_notes_json: Mapped[str] = mapped_column(Text, default="[]")
+    chronology_reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     event_count: Mapped[int] = mapped_column(Integer, default=0)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

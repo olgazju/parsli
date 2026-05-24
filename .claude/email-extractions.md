@@ -7,6 +7,12 @@ database.
 
 ---
 
+## Recent changes (2026-05-23, identifier selection refactoring)
+
+- **Candidate-level identifier scoring** — `_CARRIER_PRIORITY` dict removed from `domain/identifiers.py`. `select_best_tracking` now scores each candidate on two dimensions: (1) structure — carriers with a non-numeric prefix (`ups`, `israel_post`, `hfd`, `asos`) beat pure-numeric ones (`fedex`, `dhl`); (2) source — `"subject"` > `"body_near_keyword"` > `"body"`. No carrier-brand ranking.
+- **Subject-line tagging** — `RuleEngine.extract` now runs a secondary extraction pass on the subject text alone. Any candidate also found in the subject is upgraded to `source="subject"`. `TrackingIdentifier.source` now carries three values: `"subject"` | `"body_near_keyword"` | `"body"`.
+- **`_TRACKING_PRIORITY` removed from resolution service** — `ShipmentResolutionService._rebuild_shipment` used the same anti-pattern for `primary_tracking_number` ordering. Replaced with `_STRUCTURED_FAMILIES` frozenset (same structural principle, no brand ranking).
+
 ## Recent changes (2026-05-23)
 
 - **Language-pack architecture** — all hardcoded Hebrew/English phrases have been extracted from Python into `src/parsli/languages/en.yaml` and `he.yaml`. `EmailCleaner`, `RuleEngine`, `IdentifierExtractor`, and `GmailQueryBuilder` now accept a `MergedLanguageConfig` (built by `load_language_packs(codes)`). Core logic is fully language-agnostic. `QueryVocabulary` removed; replaced by `LanguageConfig(enabled: list[str])` in `AppConfig`. `IdentifierExtractor` is now a class; module-level free functions kept as backward-compat wrappers.

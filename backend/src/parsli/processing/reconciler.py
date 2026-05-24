@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from ..config import PrivacyConfig
 from ..domain.email_types import EmailType, email_type_from_status
-from ..domain.identifiers import OrderIdentifier, TrackingIdentifier
+from ..domain.identifiers import OrderIdentifier, TrackingIdentifier, select_best_tracking
 from ..domain.statuses import ShipmentStatus
 from ..model.base import ModelClassificationResult
 from .cleaner import CleanedEmail
@@ -287,7 +287,9 @@ class ClassificationReconciler:
             status_evidence=final_evidence,
             rule_confidence=rule_conf,
             model_confidence=model_conf if model is not None else None,
-            selected_tracking_number=tracking_vals[0].value if tracking_vals else None,
+            selected_tracking_number=(
+                select_best_tracking(tracking_vals).value if tracking_vals else None
+            ),
             tracking_candidates=tracking_vals,
             selected_order_number=order_vals[0].value if order_vals else None,
             order_candidates=order_vals,
