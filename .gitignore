@@ -221,6 +221,25 @@ parcelito-mvp-prompt.md
 decisions.md
 .DS_Store
 .python-version
-models/gemma-4-E4B-it-Q4_K_M.gguf
-models/mmproj-gemma-4-E4B-it-BF16.gguf
 /notebooks/data
+
+# Belt-and-suspenders secrets exclusions. `.parsli/` above already covers
+# the default data directory; these patterns catch stray credential files
+# or tokens that land elsewhere in the tree.
+**/credentials.json
+**/credentials.*.json
+**/tokens/
+**/*.token.json
+**/.parsli-data/
+*.pem
+*.key
+
+# Local model weights (multi-GB) — never commit.
+*.gguf
+*.safetensors
+models/
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo

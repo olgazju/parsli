@@ -13,11 +13,13 @@ analytics — your inbox stays yours.
 
 ![Parsli dashboard — Parcels view with stat cards, search, filters, and per-parcel timeline](docs/screenshot.png)
 
-<video src="docs/demo.mp4" controls width="100%">
-  <source src="docs/demo.mp4" type="video/mp4" />
-  <source src="docs/demo.mov" type="video/quicktime" />
-  Your browser can't display inline video — <a href="docs/demo.mov">download the demo</a>.
-</video>
+<!-- DEMO VIDEO -- Drag docs/demo.mov into any GitHub issue draft to get a
+     user-content CDN URL, then paste it on the line below (replace the
+     placeholder). GitHub renders that URL as an inline video player. -->
+
+https://github.com/user-attachments/assets/REPLACE-WITH-YOUR-UPLOAD-ID
+
+> *(The line above is a placeholder. See the [README contributing notes](#video-demo) below to insert your own upload URL.)*
 
 ---
 
@@ -210,6 +212,28 @@ host, editable and inspectable with regular tools.
 
 > **Want the data elsewhere?** Set `PARSLI_DATA_DIR=/absolute/path/to/dir`
 > in `.env` and that directory is mounted as `/data` instead.
+
+#### Files that contain secrets
+
+Everything under `backend/.parsli/` is sensitive and **never tracked by git**:
+
+| Path | What |
+|---|---|
+| `backend/.parsli/credentials.json` | Your Google Cloud OAuth client secret. Treat like a password. |
+| `backend/.parsli/tokens/<hash>.json` | Per-account Gmail refresh tokens. Holding one == reading that mailbox. |
+| `backend/.parsli/parsli.db` | SQLite database — message IDs, sender domains, extracted shipment data. No raw bodies or PII columns, but still locally personal. |
+
+The root [.gitignore](.gitignore) blocks `.parsli/`, `**/credentials*.json`,
+`**/tokens/`, `*.token.json`, `*.pem`, `*.key`, and `.env` so these can't
+accidentally get committed. Verify in any clone with:
+
+```bash
+git check-ignore -v backend/.parsli/credentials.json backend/.parsli/tokens/
+```
+
+If you ever pull credentials in by mistake, run `git rm --cached <file>`,
+commit, and then **rotate the credential** in Google Cloud Console — git
+history is forever and rotation is the only real cleanup.
 
 ### 4. (Optional) Override defaults
 
