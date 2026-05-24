@@ -1,6 +1,7 @@
 """Sync API routes."""
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -9,9 +10,17 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import AppConfig
+from ..db.repositories import EmailAccountRepository, GmailSyncStateRepository
 from ..gmail.auth import GmailOAuthManager, TokenMissingError
 from ..privacy.hashing import sha256_hex
 from ..services.sync_service import SyncService
+
+
+class AccountInfo(BaseModel):
+    account_id: str
+    initial_sync_completed: bool
+    last_sync_at: datetime | None
+    lookback_days: int
 
 
 class SyncResult(BaseModel):
@@ -92,6 +101,34 @@ def make_sync_router(
     def incremental_sync(account_id: str) -> SyncResult:
         """Sync only new messages since the last run."""
         return _sync_or_401(account_id, lambda: _make_sync_service().incremental_sync(account_id))
+
+    @router.get("/accounts", response_model=list[AccountInfo])
+    def list_accounts() -> list[AccountInfo]:
+        """Return all connected Gmail accounts with their sync state."""
+        emails = oauth.list_token_accounts()
+        result: list[AccountInfo] = []
+        for email in emails:
+            email_hash = sha256_hex(email)
+            with session_factory() as session:
+                account = EmailAccountRepository(session).find_by_hash(email_hash)
+                sync_state = None
+                if account is not None:
+                    sync_state = GmailSyncStateRepository(session).get(account.id)
+            result.append(
+                AccountInfo(
+                    account_id=email,
+                    initial_sync_completed=sync_state.initial_sync_completed if sync_state else False,
+                    last_sync_at=sync_state.last_successful_sync_at if sync_state else None,
+                    lookback_days=sync_state.lookback_days if sync_state else 60,
+                )
+            )
+        return result
+
+    @router.delete("/accounts/{account_id}")
+    def remove_account(account_id: str) -> dict:
+        """Remove a connected Gmail account and delete its stored token."""
+        oauth.remove_token(account_id)
+        return {"removed": account_id}
 
     return router
 

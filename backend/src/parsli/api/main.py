@@ -12,6 +12,7 @@ from ..config import AppConfig
 from ..db.session import ensure_schema, make_engine, make_session_factory
 from ..gmail.auth import GmailOAuthManager
 from .routes_dashboard import make_dashboard_router
+from .routes_dev import make_dev_router
 from .routes_settings import make_settings_router
 from .routes_sync import make_sync_router
 
@@ -55,6 +56,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(make_dashboard_router(session_factory), prefix="/api")
     app.include_router(make_sync_router(config, oauth, session_factory), prefix="/api")
     app.include_router(make_settings_router(session_factory), prefix="/api")
+    app.include_router(make_dev_router(session_factory), prefix="/api")
 
     frontend_dir = Path(__file__).parents[4] / "frontend"
 

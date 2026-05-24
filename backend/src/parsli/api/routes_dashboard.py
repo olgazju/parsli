@@ -1,8 +1,10 @@
 """Dashboard API routes."""
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import delete as sql_delete
 from sqlalchemy.orm import Session, sessionmaker
 
+from ..db.models import Shipment, ShipmentAlias, ShipmentEvent
 from ..db.repositories import ShipmentRepository
 from ..domain.projections import DashboardProjection, ShipmentDetailProjection
 from ..domain.shipments import DashboardDTO, ShipmentDTO
@@ -48,5 +50,27 @@ def make_dashboard_router(session_factory: sessionmaker[Session]) -> APIRouter:
             if shipment is None:
                 raise HTTPException(status_code=404, detail="Shipment not found")
             return shipment
+
+    @router.delete("/shipments/{canonical_id}")
+    def delete_shipment(canonical_id: str) -> dict:
+        """Hard-delete a shipment and all its associated events and aliases."""
+        with session_factory() as session:
+            session.execute(
+                sql_delete(ShipmentEvent).where(
+                    ShipmentEvent.canonical_shipment_id == canonical_id
+                )
+            )
+            session.execute(
+                sql_delete(ShipmentAlias).where(
+                    ShipmentAlias.canonical_shipment_id == canonical_id
+                )
+            )
+            session.execute(
+                sql_delete(Shipment).where(
+                    Shipment.canonical_shipment_id == canonical_id
+                )
+            )
+            session.commit()
+        return {"deleted": canonical_id}
 
     return router
