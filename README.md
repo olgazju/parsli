@@ -103,6 +103,14 @@ dense model or 26B MoE — same OpenAI-compatible interface, just slower.
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+> **Planned input sources.** Today the only ingestor is Gmail. The cleaner,
+> rule engine, model classifier, and resolution layer are all source-agnostic,
+> so the natural next sources plug in as siblings to the Gmail ingestor:
+>
+> - **SMS** — carrier delivery notifications via macOS Messages / Android SMS bridges.
+> - **Screenshots** — drop a photo of a paper delivery slip or carrier-app screen; Gemma 4's multimodal capabilities pull the tracking number and merchant.
+> - **Voice** — automated delivery calls transcribed locally (e.g. Whisper) then fed through the same pipeline.
+
 ### Pipeline
 
 ```
